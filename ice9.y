@@ -118,7 +118,7 @@ void yyerror(char *s)
 
 // token type casts
 %type <node> exp explist ostms stms stm elses lvalue typeid declist declst2
-%type <node> decl var type forward proc pdecl
+%type <node> decl type forward proc pdecl
 %type <node> var varlist
 %type <list> idlist arraydecl
 
