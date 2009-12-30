@@ -4,4 +4,7 @@ ice9.output
 ice9.tab.c
 ice9.tab.h
 ice9.yy.c
+*.swp
+*~
+*.o
 
