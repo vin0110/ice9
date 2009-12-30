@@ -27,7 +27,7 @@ string  -> "[^"\n]" 		# double-quoted string: any char but " and \n
 stms	-> stm { stm }		# there is at least one stm
 
 stm	-> if | do | fa | 'break' ';' | 'exit' ';'
-	-> 'return' ';' | 'return' exp ';'
+	-> 'return' ';'
 	-> 'write' exp ';' | 'writes' exp ';'
 	-> exp ';'		# any exp is valid
 	-> ';'			# the "empty" statement
