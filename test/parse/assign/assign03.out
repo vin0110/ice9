@@ -1,0 +1,6 @@
+ASSIGN:
+  ID:'a'
+  CALL:
+    ID:'f'
+  (arglist)
+    nil

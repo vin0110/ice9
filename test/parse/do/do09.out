@@ -1,0 +1,13 @@
+DO:
+  ID:'a'
+(body)
+  DO:
+    ID:'b'
+  (body)
+    DO:
+      ID:'c'
+    (body)
+      CALL:
+        ID:'d'
+      (arglist)
+        nil

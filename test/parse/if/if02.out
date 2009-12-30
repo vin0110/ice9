@@ -1,0 +1,11 @@
+IF:
+  BINOP(B_EQ):
+    ID:'a'
+    ILIT:1
+(then)
+  BINOP(B_ADD):
+    ILIT:1
+    ILIT:2
+  nil
+(else)
+  nil

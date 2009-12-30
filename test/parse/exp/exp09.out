@@ -1,0 +1,27 @@
+ID:'a'
+BINOP(B_ADD):
+  ID:'a'
+  ID:'b'
+BINOP(B_ADD):
+  ID:'a'
+  ID:'b'
+BINOP(B_LT):
+  BINOP(B_LT):
+    BINOP(B_LT):
+      BINOP(B_LT):
+        ID:'a'
+        ID:'b'
+      ID:'c'
+    ID:'d'
+  ID:'e'
+BINOP(B_MUL):
+  ID:'a'
+  BINOP(B_MUL):
+    ID:'b'
+    BINOP(B_MUL):
+      ID:'c'
+      BINOP(B_MUL):
+        ID:'d'
+        BINOP(B_MUL):
+          ID:'e'
+          ID:'f'

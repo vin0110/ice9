@@ -1,0 +1,11 @@
+IF:
+  ID:'a'
+(then)
+  IF:
+    ID:'b'
+  (then)
+    ID:'c'
+  (else)
+    nil
+(else)
+  ID:'d'

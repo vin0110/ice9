@@ -1,0 +1,11 @@
+IF:
+  BINOP(B_EQ):
+    ID:'foo'
+    ID:'bar'
+(then)
+  CALL:
+    ID:'a'
+  (arglist)
+    nil
+(else)
+  nil

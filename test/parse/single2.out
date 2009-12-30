@@ -1,0 +1,3 @@
+BINOP(B_ADD):
+  ILIT:1
+  ILIT:2

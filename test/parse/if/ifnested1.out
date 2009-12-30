@@ -1,0 +1,11 @@
+IF:
+  BLIT: TRUE
+(then)
+  IF:
+    ILIT:8
+  (then)
+    ILIT:1
+  (else)
+    nil
+(else)
+  nil

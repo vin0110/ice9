@@ -1,0 +1,16 @@
+ASSIGN:
+  ID:'a'
+  CALL:
+    ID:'f'
+  (arglist)
+    ID:'b'
+ASSIGN:
+  ID:'c'
+  BINOP(B_ADD):
+    ILIT:1
+    BINOP(B_MUL):
+      CALL:
+        ID:'d'
+      (arglist)
+        ID:'e'
+      ID:'g'

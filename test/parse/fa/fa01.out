@@ -1,0 +1,11 @@
+FA:
+  ID:'a'
+(from)
+  ILIT:1
+(to)
+  CALL:
+    ID:'g'
+  (arglist)
+    nil
+(body)
+  nil

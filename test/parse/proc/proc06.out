@@ -1,0 +1,7 @@
+PROC: a
+(return)
+  nil
+(body)
+  ASSIGN:
+    ID:'a'
+    ILIT:2

@@ -1,0 +1,6 @@
+BINOP(B_SUB):
+  ILIT:0
+  ID:'x'
+BINOP(B_SUB):
+  ILIT:0
+  ILIT:8

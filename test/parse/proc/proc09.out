@@ -1,0 +1,8 @@
+PROC: a
+(return)
+  nil
+(body)
+  CALL:
+    ID:'l'
+  (arglist)
+    nil

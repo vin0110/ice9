@@ -1,0 +1,8 @@
+IF:
+  BINOP(B_EQ):
+    ID:'a'
+    ILIT:1
+(then)
+  nil
+(else)
+  nil
