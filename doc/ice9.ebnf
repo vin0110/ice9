@@ -150,6 +150,12 @@ Extends from the first sharp (#) on a line to the end of the line
 8. Statements in the outermost scope are execute in order at startup.
 (Think of the outermost scope as being the C main procedure.)
 
+9. Boolean expression are short-circuit evaluated.  For example, in the
+   following expression the function f is not evaluated because the answer 
+   to the expression is known after the first clause.
+
+   	     true + f()
+
 #################
 # Symbol Tables #
 #################
