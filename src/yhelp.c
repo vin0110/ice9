@@ -71,6 +71,8 @@ Node yInsertVar(ylist ids, Node typeid, ylist array)
   Node idlist;
   ylist t;
 
+  if (!DoSemantic) return NULL;
+
   m = symLookup(Types, typeid->n_sym->name);
   if (m) {
     g = sigMake(T_NAME);
@@ -286,7 +288,7 @@ Node yCall(char *str, Node args)
       sigPrint(parms);
       putchar('\n');
 #endif
-      Fatal(LINE, "actual and formal parameters do not match");
+      FatalS(LINE, "actual and formal parameters do not match\n");
     }
   }
   n = mkCall(str, args);

@@ -109,7 +109,7 @@ Node mkExit();
 Node mkWrite(int, Node); /* int is nl? */
 Node mkRead();
 Node mkBreak();
-Node mkReturn(Node);
+Node mkReturn();
 Node mkQuest(Node);
 Node mkAssign(Node, Node);
 Node mkBinop(Binop, Node, Node);

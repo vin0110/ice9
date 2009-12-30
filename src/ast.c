@@ -212,10 +212,9 @@ Node mkBreak()
   return n;
 }
 
-Node mkReturn(Node exp)
+Node mkReturn()
 {
   Node n = nodeMake(O_RETURN);
-  n->n_r = exp;
   return n;
 }
 

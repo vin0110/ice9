@@ -231,9 +231,7 @@ stm:      TK_IF exp TK_ARROW stms elses TK_FI   // if
         | TK_EXIT TK_SEMI
 		{ $$ = mkExit(NULL); }
         | TK_RETURN TK_SEMI
-		{ $$ = mkReturn(NULL); }
-        | TK_RETURN exp TK_SEMI
-		{ $$ = mkReturn($2); }
+		{ $$ = mkReturn(); }
 	| TK_WRITE exp TK_SEMI
 		{ $$ = mkWrite(1, $2); }
 	| TK_WRITES exp TK_SEMI
