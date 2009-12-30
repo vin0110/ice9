@@ -22,7 +22,9 @@
  *****************************************************************************/
 
 #include <stdlib.h>
+#include <string.h>
 #include "symtab.h"
+#include "type.h"
 #include <assert.h>
 
 Table tabMake()
@@ -43,8 +45,6 @@ static void tabListDestroy(void *l)
 
 int tabDestroy(Table t)
 {
-  List l;
-
   if (t == NULL)
     return -1;
 
@@ -55,7 +55,10 @@ int tabDestroy(Table t)
 
 static int tabPrint2(void *a, void *b)
 {
-  printf("%s\n", ((Symbol)a)->name);
+  Symbol sym = (Symbol)a;
+  printf("    %s :- ", sym->name);
+  sigPrint(sym->info);
+  putchar('\n');
   return 0;
 }
 
@@ -64,7 +67,7 @@ static int tabPrint1(void *a, void *b)
   List l = (List)a;
   int *level = (void *)b;
 
-  printf("Level %d\n", *level);
+  printf("  Level %d\n", *level);
   *level = *level - 1;
   listApplyAll(l, tabPrint2, NULL);
   return 0;

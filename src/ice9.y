@@ -21,6 +21,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "ice9.h"
 #include "list-pack.h"
 #include "ast.h"
@@ -35,7 +36,7 @@ extern char *FileName;
 extern int yynewlines;
 extern char *yytext;
 //extern FILE *yyin;
-extern lexfrom(FILE *);
+extern int lexfrom(FILE *);
 
 //static ModuleSymbol *module = NULL;
 
@@ -48,10 +49,10 @@ int SigPrint = 0;
 void yyerror(char *s)
 {
   if ( *yytext == '\0' )
-    fprintf(stderr, "%s: line %d: %s near end of file\n", FileName, 
+    fprintf(stderr, "line %d: %s near end of file\n", 
 	    yynewlines+1,s);
   else
-    fprintf(stderr, "%s: line %d: %s near %s\n", FileName, 
+    fprintf(stderr, "line %d: %s near %s\n",
 	    yynewlines+1, s, yytext);
 }
 
@@ -136,7 +137,7 @@ void yyerror(char *s)
 %%
 program:  decl ostms
 		{ 
-		  Root = mkSeq($1, $2);
+		  if (!$1) Root = $2; else if (!$2) Root = $1; else Root = mkSeq($1,$2);
 		}
 	;
 
@@ -224,7 +225,7 @@ stm:      TK_IF exp TK_ARROW stms elses TK_FI   // if
         | TK_FA TK_ID { yFa($2); } TK_ASSIGN exp TK_TO exp TK_ARROW stms TK_AF
 		{ $$ = mkFa(mkId($2), $5, $7, $9); }
         | exp TK_SEMI
-		{ $$ = mkExp($1); }
+		{ $$ = $1; }
         | TK_BREAK TK_SEMI
 		{ $$ = mkBreak(NULL); }
         | TK_EXIT TK_SEMI
@@ -264,7 +265,7 @@ exp:	  lvalue	{ $$ = $1; }
 	| TK_MINUS exp %prec UMINUS
 		{ $$ = mkBinop(B_SUB, mkIlit(0), $2); }
 	| TK_QUEST exp
-		{ $$ = $2; } // @@@ TBD
+		{ $$ = mkQuest($2); } // @@@ TBD
 	| TK_ID TK_LPAREN TK_RPAREN
 		{ $$ = yCall($1, NULL); }
 	| TK_ID TK_LPAREN explist TK_RPAREN
@@ -296,45 +297,70 @@ explist:  exp TK_COMMA explist		{ $$ = mkSeq($1, $3); }
 	;
 
 %%
-static xnodePrint(void *a, void *b)
-{
-  nodePrint((int)b, (Node)a);
-}
-
 extern char *optarg;
 extern int optind, opterr, optopt;
 int getopt(int argc, char * const argv[], const char *optstring);
+extern int VerboseLevel;
 
-#define OPTS	"tgno:c"
+#define OPTS	"ptgsnce:o:vh"
 
 static void usage(char *prog)
 {
   fprintf(stderr, "%s [%s] <filename>\n", prog, OPTS);
+  fprintf(stderr, 
+	  "\t-p:\tparse only (shows parse tree)"
+	  "\t-t:\tshow parse tree (does semantic analysis)\n"
+	  "\t-g:\tshow parse tree, with signatures\n"
+	  "\t-s:\tshow symbol tables\n"
+	  "\t-n:\tsuppress code generation\n"
+	  "\t-c:\tcompile to native code (from C code)\n"
+	  "\t-e <n>:\tset error limit to n, 0 ==> infinity (default: 1)\n"
+	  "\t-o <f>:\tset output filename to f\n"
+	  "\t-v:\tincrease verbose level\n");
+  
   exit(-1);
 }
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   char str[128];
   char *outfile = str;
   char *cout;
   int c;
+  Sig g, g2;
   FILE *fd;
-  int treePrint=0, genCode = 1, toC = 0;
+  int treePrint=0, tablePrint=0, genCode = 1, toC = 0;
 
   while ( (c = getopt(argc, argv, OPTS)) != EOF ) {
     switch ( c ) {
+    case 'p':
+      treePrint = 1; 
+      DoSemantic = genCode = 0;
+      break;
     case 't':	treePrint = 1;			break;
+    case 's':	tablePrint = 1;			break;
     case 'n':	genCode = 0;			break;
     case 'c':	toC = 1;			break;
     case 'g':	SigPrint = treePrint = 1;	break;
     case 'o':   outfile = optarg;		break;
+    case 'e':	
+      ErrorLimit = atoi(optarg);
+      if (ErrorLimit < 0) {
+	fprintf(stderr, "invalid value for argument 'e'\n");
+	usage(argv[0]);
+      }
+    case 'v':	++VerboseLevel;			break;
+    case 'h':
     default:
       usage(argv[0]);
     }
   }
   if (toC && !genCode) {
     fprintf(stderr, "arg c not compatible with arg n\n");
+    usage(argv[0]);
+  }
+  if (!DoSemantic && genCode) {
+    fprintf(stderr, "cannot generate code without semantic analysis\n");
     usage(argv[0]);
   }
   if (optind == argc) {
@@ -358,6 +384,20 @@ main(int argc, char *argv[])
   tabPush(Vars);
 
   Procs = tabMake();
+  // make builtin function int()
+  g = sigMake(T_PROC);
+  g->under = sigMake(T_INT);
+  g2 = sigMake(T_LIST);
+  g2->under = sigMake(T_STR);
+  g->next = g2;
+  symInsert(Procs, symMake(symStr("int"), g));
+  // make builtin function str()
+  g = sigMake(T_PROC);
+  g->under = sigMake(T_STR);
+  g2 = sigMake(T_LIST);
+  g2->under = sigMake(T_INT);
+  g->next = g2;
+  symInsert(Procs, symMake(symStr("str"), g));
   tabPush(Procs);
 
   Types = tabMake();
@@ -369,7 +409,7 @@ main(int argc, char *argv[])
   symInsert(Types, symMake(symStr("string"), Gstr));
   Gnil = sigMake(T_NIL);
   Gerr = sigMake(T_ERR);
-  tabPush(Procs);
+  tabPush(Types);
 
   if (yyparse()) {
     exit(1);
@@ -378,11 +418,19 @@ main(int argc, char *argv[])
   if (treePrint) {
     nodePrint(0, Root);
   }
+  if (tablePrint) {
+    printf("Table: Procedures\n");
+    tabPrint(Procs);
+    printf("Table: Types\n");
+    tabPrint(Types);
+    printf("Table: Globals\n");
+    tabPrint(Vars);
+  }
   if (genCode) {
     int len;
 
     // create output
-    close(fd);
+    fclose(fd);
     if (toC) {
       if (outfile == str) {
 	strcpy(str, FileName);
@@ -419,4 +467,5 @@ main(int argc, char *argv[])
       //unlink(outfile);
     }
   }
+  return 0;
 }

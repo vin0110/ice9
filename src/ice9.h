@@ -26,9 +26,13 @@
 
 #define YYLMAX	256
 #define LINE	(yynewlines+1)
-extern int yynewlines;
+extern int yynewlines, ErrorLimit, DoSemantic;
+extern void Fatal(int, char *, ...);
+extern void FatalS(int, char *, ...);
+extern void Warning(int, char *, ...);
+extern void CompilerError(int, char*, ...);
+extern int Verbose(int, const char *, ...);
 
-extern void Fatal(int, char *);
 
 #endif /* ICE9_H */
 /*........................ end of ice9.h ....................................*/

@@ -23,6 +23,7 @@
 //#include "ice9.h"
 #include <stdlib.h>
 #include "type.h"
+#include "ice9.h"
 #include <assert.h>
 
 Sig sigMake(Type t)
@@ -101,7 +102,7 @@ static void prType(Type t)
   case T_LIST:	printf("T_LIST");	break;
   case T_NIL:	printf("T_NIL");	break;
   case T_ERR:	printf("T_ERR");	break;
-  default: Fatal("invalid type\n");	break;
+  default: Fatal(LINE,"invalid type: %d\n", t);	break;
   }
 }
 

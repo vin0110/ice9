@@ -28,6 +28,7 @@
 #include "symtab.h"
 #include "list-pack.h"
 
+int DoSemantic = 1;
 extern Table Procs, Vars, Types;
 extern Sig Gnil, Gint;
 
@@ -67,19 +68,15 @@ Node yInsertVar(ylist ids, Node typeid, ylist array)
 {
   Sig g, h;
   Symbol m;
-  Node n;
   Node idlist;
   ylist t;
 
-#if 0
   m = symLookup(Types, typeid->n_sym->name);
   if (m) {
     g = sigMake(T_NAME);
     g->sym = m;
   }
-  else 
-#endif
-{
+  else {
     g = typeid->n_sym->info;
 
     while (array) {
@@ -92,21 +89,14 @@ Node yInsertVar(ylist ids, Node typeid, ylist array)
   }
   t = ids;
   while (t) {
-    if (symLookup(Vars, t->head)) {
-      char buf[128];
-      sprintf(buf, "name clash: id '%s' previously defined\n", t->head);
-      Fatal(LINE, buf);
-    }
-    if (symInsert(Vars, symMake(symStr(t->head), g))) {
-      char buf[128];
-      sprintf(buf, "sym tab insert failed %s", t->head);
-      Fatal(LINE, buf);
-    }
+    if (symLookup(Vars, t->head))
+      FatalS(LINE, "name clash: id '%s' previously defined\n", (char*)t->head);
+    if (symInsert(Vars, symMake(symStr(t->head), g)))
+      FatalS(LINE, "sym tab insert failed %s\n", (char*)t->head);
     t = t->tail;
   }
   idlist = idList(ids);
-  n = mkVar(idlist, g);
-  return n;
+  return NULL;
 }
 
 static Node declist(ylist ids, Sig g, Node tail)
@@ -123,8 +113,11 @@ static Node declist(ylist ids, Sig g, Node tail)
 
 Node yDeclist(ylist ids, Node typeid, Node tail)
 {
-  Node n, b;
-  Sig g = typeid->n_sym->info;
+  Sig g;
+  if (DoSemantic)
+    g = typeid->n_sym->info;
+  else
+    g = NULL;
 
   return declist(ids, g, tail);
 }
@@ -132,13 +125,14 @@ Node yDeclist(ylist ids, Node typeid, Node tail)
 Node yInsertType(char *id, Node typeid, ylist array)
 {
   Sig g, h;
+
+  if (!DoSemantic) return NULL;
+
+  if (symLookup(Types, id))
+    FatalS(LINE, "name clash: type '%s' previously defined\n", id);
+
   g = typeid->n_sym->info;
 
-  if (symLookup(Types, id)) {
-    char buf[128];
-    sprintf(buf, "name clash: type '%s' previously defined\n", id);
-    Fatal(LINE, buf);
-  }
   while (array) {
     h = sigMake(T_ARRAY);
     h->under = g;
@@ -150,7 +144,8 @@ Node yInsertType(char *id, Node typeid, ylist array)
   h->under = g;
   h->sym = symMake(symStr(id), h);
   symInsert(Types, h->sym);
-  return mkType(id, g);
+
+  return NULL;
 }
 
 void yFa(char *id)
@@ -168,7 +163,7 @@ static Sig mkSiglist(Node params)
   g = sigMake(T_LIST);
   g->under = params->sig;
 
-  if (params->n_r) {
+  if (params->oper == O_SEQ && params->n_r) {
     g->next = mkSiglist(params->n_r);
     g->size = g->next->size + 1;
   }
@@ -177,19 +172,14 @@ static Sig mkSiglist(Node params)
   return g;
 }
 
-static char *curproc;
-
 Node yForward(char *id, Node params, Node rettype)
 {
-  Node t;
   Symbol m;
   Sig g;
 
   m = symLookup(Procs, id);
   if (m) {    // not error if forwarded
-    char buf[128];
-    sprintf(buf, "name clash: proc '%s' previously defined\n", id);
-    Fatal(LINE, buf);
+    FatalS(LINE, "name clash: proc '%s' previously defined\n", id);
   }
   else {
     g = sigMake(T_PROC);
@@ -204,7 +194,7 @@ Node yForward(char *id, Node params, Node rettype)
     symInsert(Procs, m);
   }
   
-  return mkForward(id, params, rettype, g);
+  return NULL;
 }
 
 Node yProcPre(char *id, Node params, Node rettype)
@@ -216,11 +206,8 @@ Node yProcPre(char *id, Node params, Node rettype)
   m = symLookup(Procs, id);
   if (m) {    // not error if forwarded
     g = m->info;
-    if (g->size != -1) {
-      char buf[128];
-      sprintf(buf, "name clash: proc '%s' previously defined\n", id);
-      Fatal(LINE, buf);
-    }
+    if (g->size != -1)
+      FatalS(LINE, "name clash: proc '%s' previously defined\n", id);
     g->size = 1;
   }
   else {
@@ -254,10 +241,7 @@ Node yProcPost(Node decls, Node stms)
   tabPop(Vars);
   tabPop(Types);
 
-  if (decls)
-    return mkSeq(decls, stms);
-  else
-    return stms;
+  return mkSeq(decls, stms);
 }
 
 Node yLval(Node id)
@@ -265,14 +249,11 @@ Node yLval(Node id)
   Symbol m;
 
   assert(id);
-  if (id->oper == O_SYM)
+  if (id->oper == O_SYM || !DoSemantic)
     return id;
   m = symLookup(Vars, id->n_str);
-  if (!m) {
-    char buf[128];
-    sprintf(buf, "invalid identifier %s", id->n_str);
-    Fatal(LINE, buf);
-  }
+  if (!m)
+    FatalS(LINE, "invalid identifier %s\n", id->n_str);
   id->sig = m->info;
   id->n_sym = m;
   id->oper = O_SYM;
@@ -282,32 +263,49 @@ Node yLval(Node id)
 Node yCall(char *str, Node args)
 {
   Symbol sym;
-  Sig g, parms;
   Node n;
+  Sig proc, parms;
   
   sym = symLookup(Procs, str);
-  if (!sym) {
-    char buf[128];
-    sprintf(buf, "invalid procedure %s\n", str);
-    Fatal(LINE, buf);
+  if (!sym) 
+    FatalS(LINE, "invalid procedure %s\n", str);
+  else {
+    proc = (Sig)sym->info;
+#if 0
+    puts("foo");
+    nodePrint(0,args);
+    sigPrint(proc); putchar('\n');
+#endif
+    parms = mkSiglist(args);
+    // check param sig
+    if (sigCmp(proc->next, parms)) {
+#if 0
+      printf("proc: ");
+      sigPrint(proc->next);
+      printf("\nparms: ");
+      sigPrint(parms);
+      putchar('\n');
+#endif
+      Fatal(LINE, "actual and formal parameters do not match");
+    }
   }
-  //parms = mkSiglist(args);
-  // check param sig
-
   n = mkCall(str, args);
-  n->sig = ((Sig)sym->info)->under;
+  if (proc && proc->under)
+    n->sig = proc->under;
+  else
+    n->sig = NULL;
   return n;
 }
 
 Node yTypeid(char *str)
 {
   Symbol sym;
-  Sig g;
+  if (!DoSemantic) return NULL;
+
   sym = symLookup(Types, str);
   if (!sym) {
-    char buf[128];
-    sprintf(buf, "invalid typeid %s\n", str);
-    Fatal(LINE, buf);
+    FatalS(LINE, "invalid typeid %s\n", str);
+    return NULL;
   }
   return mkSym(sym, NULL);
 }

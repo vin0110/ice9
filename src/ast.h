@@ -66,6 +66,7 @@ typedef enum {			/* addtional fields that are used */
   O_ASSIGN,			/* n_l, n_r */
   O_BINOP,			/* n_binop, n_l, n_r */
   O_CALL,			/* n_l, n_r */
+  O_QUEST,			/* n_r */
   O_ERR
 } Oper;
 
@@ -108,7 +109,8 @@ Node mkExit();
 Node mkWrite(int, Node); /* int is nl? */
 Node mkRead();
 Node mkBreak();
-Node mkReturn();
+Node mkReturn(Node);
+Node mkQuest(Node);
 Node mkAssign(Node, Node);
 Node mkBinop(Binop, Node, Node);
 Node mkCall(char *, Node);

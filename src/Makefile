@@ -1,7 +1,7 @@
 #
 # Makefile for ice9
 CC	= gcc
-CFLAGS	= -g
+CFLAGS	= -g -Wall -pedantic -std=c99
 
 LIB	= -lfl
 OBJ	= ice9.yy.o ice9.tab.o util.o list.o symtab.o type.o ast.o yhelp.o cg.o

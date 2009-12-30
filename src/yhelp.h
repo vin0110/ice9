@@ -33,6 +33,7 @@ typedef struct _ylist {
 
 ylist yList(void *, ylist);
 void yListFree(ylist, int);
+void yFa(char *);
 
 Node yInsertVar(ylist, Node, ylist);
 Node yDeclist(ylist, Node, Node);
@@ -41,6 +42,7 @@ Node yForward(char *, Node, Node);
 Node yProcPre(char *, Node, Node);
 Node yProcPost(Node, Node);
 Node yLval(Node);
+Node yQuest(Node);
 Node yCall(char *, Node);
 Node yTypeid(char *);
 

@@ -6,27 +6,15 @@
  *
  *  Created by vin on 01/10/02
  *
- *  Revision History.:
- *
- *  $Log: ast.c,v $
- *  Revision 1.2  2002/01/18 20:47:09  vin
- *  Three working phases: all the way to CG'g C code.
- *  Robustness not verified.
- *
- *  Revision 1.1  2002/01/16 22:14:03  vin
- *  The basics of semantics are in and working.
- *
- *
- *  $Id: ast.c,v 1.2 2002/01/18 20:47:09 vin Exp $
  *
  *****************************************************************************/
 
 #include "list-pack.h"
 #include "ice9.h"
-#include "symtab.h"
 #include "type.h"
 #include "ast.h"
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 
 extern int yynewlines;
@@ -76,16 +64,20 @@ Node mkArr(Node l, Node exp)
 {
   Sig g;
   Node n = nodeMake(O_ARR);
-  if (sigCmp(exp->sig, Gint))
-    Fatal(LINE, "non-integer index");
+  if (DoSemantic) {
+    if (sigCmp(exp->sig, Gint))
+      FatalS(LINE, "non-integer index\n");
+  }
   n->n_l = l;
   n->n_r = exp;
-  assert(l->sig);
-  g = l->sig;
-  if (g->type == T_NAME)
-    g = g->under;
-  assert(g->under);
-  n->sig = g->under;
+  if (DoSemantic) {
+    assert(l->sig);
+    g = l->sig;
+    if (g->type == T_NAME)
+      g = g->under;
+    assert(g->under);
+    n->sig = g->under;
+  }
   return n;
 }
 
@@ -164,7 +156,7 @@ Node mkIf(Node cond, Node then, Node elses)
 {
   Node n = nodeMake(O_IF);
   if (sigCmp(cond->sig, Gbool)) {
-    Fatal(LINE, "condition not a boolean");
+    FatalS(LINE, "condition not a boolean\n");
   }
   n->n_l = cond;
   n->n_r = mkSeq(then, elses);
@@ -184,9 +176,9 @@ Node mkFa(Node id, Node lb, Node ub, Node body)
   Node n = nodeMake(O_FA);
   
   if (sigCmp(lb->sig, Gint))
-    Fatal(LINE, "lb in fa not an integer");
+    FatalS(LINE, "lb in fa not an integer\n");
   if (sigCmp(ub->sig, Gint))
-    Fatal(LINE, "ub in fa not an integer");
+    FatalS(LINE, "ub in fa not an integer\n");
 
   n->n_l = id;
   n->n_r = mkSeq(mkSeq(lb, ub), body);
@@ -227,18 +219,27 @@ Node mkReturn(Node exp)
   return n;
 }
 
+Node mkQuest(Node exp)
+{
+  Node n = nodeMake(O_QUEST);
+  n->n_r = exp;
+  return n;
+}
+
 Node mkAssign(Node l, Node r)
 {
   Node n = nodeMake(O_ASSIGN);
   n->n_l = l;
   n->n_r = r;
-  if (sigCmp(l->sig, r->sig)) {
-    Fatal(LINE, "incompatible types in assignment");
-  }
-  if (!sigCmp(l->sig, Gint) && 
-      !sigCmp(l->sig, Gbool) && 
-      !sigCmp(l->sig, Gstr)) {
-    Fatal(LINE, "assignment to non-scalar variable");
+  if (DoSemantic) {
+    if (sigCmp(l->sig, r->sig)) {
+      FatalS(LINE, "incompatible types in assignment\n");
+    }
+    if (!sigCmp(l->sig, Gint) && 
+	!sigCmp(l->sig, Gbool) && 
+	!sigCmp(l->sig, Gstr)) {
+      FatalS(LINE, "assignment to non-scalar variable\n");
+    }
   }
   return n;
 }
@@ -246,22 +247,22 @@ Node mkAssign(Node l, Node r)
 static Sig ckSig(Binop op, Sig l, Sig r)
 {
   if (!l || !r) {
-    Fatal(LINE, "incorrect types to binop");
+    Fatal(LINE, "missing argument to binop\n");
     return Gnil;
   }
   if (sigCmp(l, r)) {
-    Fatal(LINE, "incorrect types to binop.");
+    FatalS(LINE, "types in binop do not match\n");
     return Gnil;
   }
 
   // l and r are the same
   if (!sigCmp(l, Gstr)) {
-    Fatal(LINE, "incorrect types to binop..");
+    FatalS(LINE, "invalid type for binop\n");
     return Gnil;
   }
   else if (!sigCmp(l, Gbool)) {
     if (op != B_ADD && op != B_MUL) {
-      Fatal(LINE, "incorrect types to binop...");
+      FatalS(LINE, "invalid type for binop\n");
       return Gnil;
     }
   }
@@ -281,7 +282,8 @@ Node mkBinop(Binop op, Node l, Node r)
   n->n_binop = op;
   n->n_l = l;
   n->n_r = r;
-  n->sig = ckSig(op, l->sig, r->sig);
+  if (DoSemantic)
+    n->sig = ckSig(op, l->sig, r->sig);
   return n;
 }
 
@@ -293,7 +295,7 @@ Node mkCall(char *id, Node elist)
   return n;
 }
 
-static prOper(Oper op)
+static void prOper(Oper op)
 {
   switch (op) {
   case O_SEQ:
@@ -356,6 +358,9 @@ static prOper(Oper op)
   case O_RETURN:
     fputs("RETURN:", stdout);
     break;
+  case O_QUEST:
+    fputs("QUEST:", stdout);
+    break;
   case O_ASSIGN:
     fputs("ASSIGN:", stdout);
     break;
@@ -369,7 +374,7 @@ static prOper(Oper op)
     fputs("ERR:", stdout);
     break;
   default:
-    Fatal(LINE, "invalid operator");
+    Fatal(LINE, "invalid operator: %d\n", op);
     break;
   }
 }
@@ -413,17 +418,29 @@ void printBinop(Binop b)
   }
 }
 
+static void prFa(int, Node);
+static void prDo(int, Node);
+static void prIf(int, Node);
+static void prCall(int, Node);
+static void prProc(int, Node);
+
 #define INDENT(n) do { int i; for (i = 0; i<n*2; i++) putchar(' ');} while (0)
 
 void nodePrint(int indent, Node n)
 {
-  if (!n)
+  if (!n) {
+    INDENT(indent);
+    puts("nil");
     return;
+  }
   if (n->oper == O_SEQ) {
-    nodePrint(indent, n->n_l);
+    if (n->n_l)
+      nodePrint(indent, n->n_l);
     nodePrint(indent, n->n_r);
     return;
   }
+  else if (n->oper == O_SYM && !DoSemantic)
+    return;
   INDENT(indent);
   prOper(n->oper);
   switch (n->oper) {
@@ -434,7 +451,7 @@ void nodePrint(int indent, Node n)
     printf("'%s'", n->n_str);
     break;
   case O_SYM:
-    printf("'%s'", n->n_sym->name);
+      printf("'%s'", n->n_sym->name);
     break;
   case O_ARR:
     break;
@@ -448,6 +465,9 @@ void nodePrint(int indent, Node n)
     printf(" %s", n->n_int ? "TRUE" : "FALSE");
     break;
   case O_PROC:
+    printf(" %s\n", n->n_str);
+    prProc(indent, n);
+    return;
   case O_FORWARD:
     printf(" %s", n->n_str);
     break;
@@ -457,16 +477,19 @@ void nodePrint(int indent, Node n)
   case O_VAR:
     break;
   case O_IF:
-    break;
+    prIf(indent,n);
+    return;
   case O_DO:
-    break;
+    prDo(indent,n);
+    return;
   case O_FA:
-    break;
+    prFa(indent,n);
+    return;
   case O_EXIT:
     printf(" %d", n->n_int);
     break;
   case O_WRITE:
-    printf("", n->n_xtra ? "" : "S" );
+    printf("%s", n->n_xtra ? "" : "S" );
     break;
   case O_READ:
     break;
@@ -474,16 +497,20 @@ void nodePrint(int indent, Node n)
     break;
   case O_RETURN:
     break;
+  case O_QUEST:
+    break;
   case O_ASSIGN:
     break;
   case O_BINOP:
     printBinop(n->n_binop);
     break;
   case O_CALL:
+    prCall(indent,n);
+    return;
   case O_ERR:
     break;
   default:
-    Fatal(LINE, "invalid operator");
+    Fatal(LINE, "invalid operator: %d\n", n->oper);
     break;
   }
   if (SigPrint) {
@@ -494,7 +521,65 @@ void nodePrint(int indent, Node n)
     }
   }
   putchar('\n');
+  if (n->n_l)
+    nodePrint(indent+1, n->n_l);
+  if (n->n_r)
+    nodePrint(indent+1, n->n_r);
+}
+
+static void prFa(int indent, Node n)
+{
+  putchar('\n');
   nodePrint(indent+1, n->n_l);
+  INDENT(indent);
+  printf("(from)\n");
+  nodePrint(indent+1, n->n_r->n_l->n_l);
+  INDENT(indent);
+  printf("(to)\n");
+  nodePrint(indent+1, n->n_r->n_l->n_r);
+  INDENT(indent);
+  printf("(body)\n");
+  nodePrint(indent+1, n->n_l->n_r);
+}
+
+static void prDo(int indent, Node n)
+{
+  putchar('\n');
+  nodePrint(indent+1, n->n_l);
+  INDENT(indent);
+  printf("(body)\n");
+  nodePrint(indent+1, n->n_r);
+}
+
+static void prIf(int indent, Node n)
+{
+  putchar('\n');
+  nodePrint(indent+1, n->n_l);
+  INDENT(indent);
+  printf("(then)\n");
+  nodePrint(indent+1, n->n_r->n_l);
+  INDENT(indent);
+  printf("(else)\n");
+  nodePrint(indent+1, n->n_r->n_r);
+}
+
+static void prCall(int indent, Node n)
+{
+  putchar('\n');
+  nodePrint(indent+1, n->n_l);
+  INDENT(indent);
+  printf("(arglist)\n");
+  nodePrint(indent+1, n->n_r);
+}
+
+static void prProc(int indent, Node n)
+{
+
+  INDENT(indent);
+  printf("(return)\n");
+  nodePrint(indent+1, n->n_l);
+  INDENT(indent);
+  printf("(body)\n");
   nodePrint(indent+1, n->n_r);
 }
 

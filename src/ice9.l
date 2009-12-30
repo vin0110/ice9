@@ -95,10 +95,7 @@ read	return TK_READ;
 [ \t\f\v]		  ;			/* whitespace */
 \n			{ yynewlines++; }
 
-.		{ char b[128]; 
-		  sprintf(b, "Illegal charactor (%c)", (char*)yytext); 
-		  Fatal(LINE, b);
-		}
+.		{ Fatal(LINE, "Illegal charactor (%c)\n", *(char*)yytext); }
 %%
 
 
@@ -126,14 +123,14 @@ static int strlit(char term)
 {
   char buf [YYLMAX + 1];
   char *p, *q;
-  int c, n, len;
+  int c, len;
 
   p = buf;
   q = p + YYLMAX;
   len = 0;
   for (c = input(); c != term; c = input()) {
     if (c == '\n' || c == '\0') {
-      Fatal(LINE, "unterminated string");
+      Fatal(LINE, "unterminated string\n");
     }
     if (p < q)
       *p++ = c;
@@ -142,7 +139,7 @@ static int strlit(char term)
   *p++ = '\0';
 
   if (len > YYLMAX) {
-    Fatal(LINE, "string too long");
+    Fatal(LINE, "string too long\n");
   }
 
   yylval.str = (char *)ckalloc(len);
