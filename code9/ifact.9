@@ -1,8 +1,8 @@
-# factorial program
-proc fact(n: int) : int
-  if (n <= 1) -> fact := n;
-  [] else -> fact := n * fact(n-1);
-  fi
+# iterative factorial program
+
+proc ifact(n: int) : int
+  ifact := 1;
+  fa k := 2 to n -> ifact := ifact * k; af
 end
 
 var f: int
@@ -15,4 +15,4 @@ if (f < 1) + (f > 100) -> write "Invalid: 0 < n < 101"; fi
 writes "Factorial of ";
 writes str(f);
 writes " is ";
-writes str(fact(f));
+writes str(ifact(f));

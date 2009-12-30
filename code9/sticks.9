@@ -1,0 +1,101 @@
+# stick game
+
+var N: int		# the current number of sticks
+var pick: int
+var picktext: string
+
+proc check(size: int): bool
+   var ans: int
+   check := false;
+   do true ->
+      writes "Do you want to play this long of a game? 0=no / 1= yes";
+      ans := read;
+      if (ans = 1) * (N <= 200) -> 
+      	 write "OK";
+	 check := true; 
+	 return;
+      [] ans = 1 -> 
+      	 write "Well I don't!"; 
+	 return;
+      [] ans = 0 -> 
+      	 return;
+      [] else -> 
+      	 write "I don't understand your answer.";
+      fi
+   od
+end
+
+proc error()
+   write "Oops, I got confused and let you take too many sticks.";
+   write "Game over.";
+   exit;
+end
+
+proc mypick(n: int) : int
+   if n < 0 ->
+      error();		# should never get here
+   [] n < 4 ->
+      mypick := n;
+   [] else ->
+      mypick := 4;
+      do mypick + 4 < n -> mypick := mypick + 4; od
+   fi
+end
+
+# get the size of the game
+do true ->
+   writes "Enter number of sticks: ";
+   N := read;
+   if N < 15 -> 
+      write "Don't be silly.  Pick a larger number"; 
+   [] N > 100 ->
+      if check(N) -> 
+      	 break; 
+      fi
+   [] else -> 
+      break;
+   fi
+od
+
+write "You must pick 1, 2, or 3 sticks each turn.";
+do N > 0 ->
+   writes "There are ";
+   writes N;
+   write " sticks remaining.";
+   writes "It is your turn.  How many do you want? ";
+   fa tries := 1 to 4 ->
+      pick := read;
+      if (0 < pick) + (pick > 3) ->
+      	 writes "You must pick 1, 2, or 3 sticks.  Try again: ";
+      [] pick > N ->
+      	 writes "There are only ";
+	 writes N;
+	 writes " sticks.  Try again: ";
+      fi
+   af
+
+   if (0 < pick) + (pick > 3) ->
+      write "You don't seem to understand this game.  Good bye.";
+      exit;
+   fi
+
+   N := N - pick;
+   if N < 0 -> 
+      error();
+   [] N = 0 ->
+      write "Congratulations!  You won.";
+      exit;
+   [] else ->
+      writes "There are ";
+      writes N;
+      write " sticks remaining.";
+      writes "It is my pick.  I pick ";
+      pick := mypick(N);
+      writes pick;
+      write " sticks.";
+      N := N - pick;
+   fi
+od
+
+write "There are no stick remaining.  I won.";
+
