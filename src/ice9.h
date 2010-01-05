@@ -25,7 +25,7 @@
 #define ICE9_H
 
 #define YYLMAX	256
-#define LINE	(yynewlines+1)
+#define LINE	(yynewlines)
 extern int yynewlines, ErrorLimit, DoSemantic;
 extern void Fatal(int, char *, ...);
 extern void FatalS(int, char *, ...);

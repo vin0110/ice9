@@ -1,0 +1,20 @@
+var a : int [2]
+var b : int [2][3]
+var i, j : int
+
+fa i := 1 to 2 ->
+   write i;
+   a[i] := i * 8;
+   fa j := 1 to 3 ->
+      b[i][j] := 160/(3*i+j);
+   af
+af
+
+writes "a: "; writes a[1]; writes " "; write a[2];
+
+fa i := 1 to 2 ->
+   fa j := 1 to 3 ->
+      writes "b["; writes i; writes "]["; writes j; writes "] = "; write b[i][j];
+   af
+af
+

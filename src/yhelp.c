@@ -64,12 +64,18 @@ static Node idList(ylist hd)
   return n;
 }
 
+/* 
+ * insert a list of variables in the the Vars symbol table
+ * ids 		- list of vars (char *)
+ * typeid	- base type
+ * array	- optional array declarations; a list of integers
+ */
 Node yInsertVar(ylist ids, Node typeid, ylist array)
 {
   Sig g, h;
   Symbol m;
   Node idlist;
-  ylist t;
+  Node t;
 
   if (!DoSemantic) return NULL;
 
@@ -77,28 +83,30 @@ Node yInsertVar(ylist ids, Node typeid, ylist array)
   if (m) {
     g = sigMake(T_NAME);
     g->sym = m;
+    g->under = m->info;
   }
   else {
-    g = typeid->n_sym->info;
-
-    while (array) {
-      h = sigMake(T_ARRAY);
-      h->under = g;
-      h->size = (int)array->head;
-      g = h;
-      array = array->tail;
-    }
+    FatalS(0, "type '%s' not found\n", typeid->n_sym->name);
   }
-  t = ids;
-  while (t) {
-    if (symLookup(Vars, t->head))
-      FatalS(LINE, "name clash: id '%s' previously defined\n", (char*)t->head);
-    if (symInsert(Vars, symMake(symStr(t->head), g)))
-      FatalS(LINE, "sym tab insert failed %s\n", (char*)t->head);
-    t = t->tail;
+  while (array) {
+    h = sigMake(T_ARRAY);
+    h->under = g;
+    h->size = (int)array->head;
+    g = h;
+    array = array->tail;
   }
   idlist = idList(ids);
-  return NULL;
+  t = idlist;
+  while (t) {
+    if (symLookup(Vars, t->n_str))
+      FatalS(LINE, "name clash: id '%s' previously defined\n", (char*)t->n_str);
+    if (symInsert(Vars, symMake(symStr(t->n_str), g)))
+      FatalS(LINE, "sym tab insert failed %s\n", (char*)t->n_str);
+    t->sig = g;
+    t = t->n_r;
+  }
+
+  return idlist;
 }
 
 static Node declist(ylist ids, Sig g, Node tail)
@@ -267,7 +275,7 @@ Node yCall(char *str, Node args)
   Symbol sym;
   Node n;
   Sig proc, parms;
-  
+
   sym = symLookup(Procs, str);
   if (!sym) 
     FatalS(LINE, "invalid procedure %s\n", str);
@@ -291,7 +299,7 @@ Node yCall(char *str, Node args)
       FatalS(LINE, "actual and formal parameters do not match\n");
     }
   }
-  n = mkCall(str, args);
+  n = mkExp(mkCall(str, args));
   if (proc && proc->under)
     n->sig = proc->under;
   else

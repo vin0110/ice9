@@ -25,7 +25,7 @@
 #include "ast.h"
 #include "ice9.tab.h"
 
-int yynewlines=0;
+int yynewlines=1;
 // static int input();
 
 static int doid();
@@ -36,7 +36,6 @@ static int strlit(char);
 static void toolong();
 static void *ckalloc(unsigned);
 %}
-%option	yylineno
 
 %%
 
@@ -76,6 +75,7 @@ read	return TK_READ;
 -	return TK_MINUS;
 "*"	return TK_STAR;
 "/"	return TK_SLASH;
+"%"	return TK_MOD;
 =	return TK_EQ;
 !=	return TK_NEQ;
 >	return TK_GT;

@@ -22,6 +22,8 @@ extern int SigPrint;
 extern Sig Gint, Gbool, Gstr, Gnil, Gerr;
 extern Table Vars;
 
+static char *binop2str(Binop);
+
 static Node nodeMake(Oper o)
 {
 
@@ -30,8 +32,7 @@ static Node nodeMake(Oper o)
   n->oper = o;
   n->sig = Gnil;
   n->n_int = 0;
-  //  n->n_binop = B_ERR;
-  n->n_loc = yynewlines+1;
+  n->n_loc = yynewlines;
   n->n_l = n->n_r = NULL;
   return n;
 }
@@ -48,6 +49,13 @@ Node mkExp(Node e)
 {
   Node n = nodeMake(O_EXP);
   n->n_r = e;
+  return n;
+}
+
+Node mkExpStm(Node e)
+{
+  Node n = mkExp(e);
+  n->n_xtra = 1;
   return n;
 }
 
@@ -218,16 +226,11 @@ Node mkReturn()
   return n;
 }
 
-Node mkQuest(Node exp)
-{
-  Node n = nodeMake(O_QUEST);
-  n->n_r = exp;
-  return n;
-}
-
 Node mkAssign(Node l, Node r)
 {
   Node n = nodeMake(O_ASSIGN);
+  assert(l);
+  assert(r);
   n->n_l = l;
   n->n_r = r;
   if (DoSemantic) {
@@ -243,25 +246,36 @@ Node mkAssign(Node l, Node r)
   return n;
 }
 
+static int ckSigUni(Binop op, Sig r) 
+{
+  switch (op) {
+  case B_SUB:	return sigCmp(r, Gint);
+  case B_QUEST: return sigCmp(r, Gbool);
+  default:
+    FatalS(0, "invalid unary operator %s\n", binop2str(op));
+  }
+  return -1;
+}
+
 static Sig ckSig(Binop op, Sig l, Sig r)
 {
   if (!l || !r) {
-    Fatal(LINE, "missing argument to binop\n");
+    Fatal(LINE, "binop (%s) missing arugment(s)\n", binop2str(op));
     return Gnil;
   }
   if (sigCmp(l, r)) {
-    FatalS(LINE, "types in binop do not match\n");
+    FatalS(LINE, "types in binop (%s) do not match\n", binop2str(op));
     return Gnil;
   }
 
   // l and r are the same
   if (!sigCmp(l, Gstr)) {
-    FatalS(LINE, "invalid type for binop\n");
+    FatalS(LINE, "invalid type for binop (%s)\n", binop2str(op));
     return Gnil;
   }
   else if (!sigCmp(l, Gbool)) {
-    if (op != B_ADD && op != B_MUL) {
-      FatalS(LINE, "invalid type for binop\n");
+    if (op != B_ADD && op != B_MUL && op != B_NEQ && B_EQ) {
+      FatalS(LINE, "invalid type for binop (%s)\n", binop2str(op));
       return Gnil;
     }
   }
@@ -283,6 +297,21 @@ Node mkBinop(Binop op, Node l, Node r)
   n->n_r = r;
   if (DoSemantic)
     n->sig = ckSig(op, l->sig, r->sig);
+  return n;
+}
+
+Node mkUniop(Binop op, Node r)
+{
+  Node n = nodeMake(O_UNIOP);
+  n->n_binop = op;
+  n->n_l = NULL;
+  n->n_r = r;
+  if (DoSemantic) {
+    if (ckSigUni(op, r->sig))
+      FatalS(LINE, "type mistmatch for unary operator %s\n", binop2str(op));
+    else
+      n->sig = Gint;
+  }
   return n;
 }
 
@@ -357,11 +386,11 @@ static void prOper(Oper op)
   case O_RETURN:
     fputs("RETURN:", stdout);
     break;
-  case O_QUEST:
-    fputs("QUEST:", stdout);
-    break;
   case O_ASSIGN:
     fputs("ASSIGN:", stdout);
+    break;
+  case O_UNIOP:
+    fputs("UNIOP(", stdout);
     break;
   case O_BINOP:
     fputs("BINOP(", stdout);
@@ -373,48 +402,32 @@ static void prOper(Oper op)
     fputs("ERR:", stdout);
     break;
   default:
-    Fatal(LINE, "invalid operator: %d\n", op);
+    Fatal(LINE, "invalid operator: %s\n", binop2str(op));
     break;
   }
 }
 
-void printBinop(Binop b)
+static char *binop2str(Binop b)
 {
   switch (b) {
-  case B_ADD:
-    fputs("B_ADD):", stdout);
-    break;
-  case B_SUB:
-    fputs("B_SUB):", stdout);
-    break;
-  case B_MUL:
-    fputs("B_MUL):", stdout);
-    break;
-  case B_DIV:
-    fputs("B_DIV):", stdout);
-    break;
-  case B_EQ:
-    fputs("B_EQ):", stdout);
-    break;
-  case B_NEQ:
-    fputs("B_NEQ):", stdout);
-    break;
-  case B_LT:
-    fputs("B_LT):", stdout);
-    break;
-  case B_GT:
-    fputs("B_GT):", stdout);
-    break;
-  case B_LE:
-    fputs("B_LE):", stdout);
-    break;
-  case B_GE:
-    fputs("B_GE):", stdout);
-    break;
-  default:
-    fputs("B_ERR):", stdout);
-    break;
+  case B_ADD:	return "B_ADD";
+  case B_SUB:	return "B_SUB";
+  case B_MUL:	return "B_MUL";
+  case B_DIV:	return "B_DIV";
+  case B_MOD:	return "B_MOD";
+  case B_EQ:	return "B_EQ";
+  case B_NEQ:	return "B_NEQ";
+  case B_LT:	return "B_LT";
+  case B_GT:	return "B_GT";
+  case B_LE:	return "B_LE";
+  case B_GE:	return "B_GE";
+  case B_QUEST:	return "B_QUEST";
+  default:	return "B_ERR";
   }
+}
+
+void printBinop(Binop b){
+  fprintf(stdout, "%s):", binop2str(b));
 }
 
 static void prFa(int, Node);
@@ -444,6 +457,7 @@ void nodePrint(int indent, Node n)
   prOper(n->oper);
   switch (n->oper) {
   case O_SEQ:
+    CompilerError(n->n_loc, "Found SEQ where none should be\n");
   case O_EXP:
     break;
   case O_ID:
@@ -491,15 +505,11 @@ void nodePrint(int indent, Node n)
     printf("%s", n->n_xtra ? "" : "S" );
     break;
   case O_READ:
-    break;
   case O_BREAK:
-    break;
   case O_RETURN:
-    break;
-  case O_QUEST:
-    break;
   case O_ASSIGN:
     break;
+  case O_UNIOP:
   case O_BINOP:
     printBinop(n->n_binop);
     break;
@@ -507,7 +517,6 @@ void nodePrint(int indent, Node n)
     prCall(indent,n);
     return;
   case O_ERR:
-    break;
   default:
     Fatal(LINE, "invalid operator: %d\n", n->oper);
     break;
@@ -576,10 +585,18 @@ static void prProc(int indent, Node n)
 
   INDENT(indent);
   printf("(return)\n");
-  nodePrint(indent+1, n->n_l);
+  nodePrint(indent+1, n->n_l->n_r);
+  if (DoSemantic) {
+    INDENT(indent);
+    printf("(formals)\n");
+    nodePrint(indent+1, n->n_l->n_l);
+    INDENT(indent);
+    printf("(locals)\n");
+    nodePrint(indent+1, n->n_r->n_l);
+  }
   INDENT(indent);
   printf("(body)\n");
-  nodePrint(indent+1, n->n_r);
+  nodePrint(indent+1, n->n_r->n_r);
 }
 
 /*........................ end of ast.c .....................................*/

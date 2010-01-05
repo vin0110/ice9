@@ -50,10 +50,10 @@ void yyerror(char *s)
 {
   if ( *yytext == '\0' )
     fprintf(stderr, "line %d: %s near end of file\n", 
-	    yynewlines+1,s);
+	    yynewlines,s);
   else
     fprintf(stderr, "line %d: %s near %s\n",
-	    yynewlines+1, s, yytext);
+	    yynewlines, s, yytext);
 }
 
 %}
@@ -103,6 +103,7 @@ void yyerror(char *s)
 %token TK_MINUS
 %token TK_STAR
 %token TK_SLASH
+%token TK_MOD
 %token TK_EQ
 %token TK_NEQ
 %token TK_GT
@@ -129,16 +130,13 @@ void yyerror(char *s)
 
 %nonassoc TK_EQ TK_NEQ TK_GT TK_LT TK_GE TK_LE
 %left TK_PLUS TK_MINUS
-%left TK_STAR TK_SLASH
+%left TK_STAR TK_SLASH TK_MOD
 %nonassoc UMINUS
 
 %start program
 
 %%
-program:  decl ostms
-		{ 
-		  if (!$1) Root = $2; else if (!$2) Root = $1; else Root = mkSeq($1,$2);
-		}
+program:  decl ostms { Root = mkSeq($1,$2); }
 	;
 
 // program declarations
@@ -225,7 +223,7 @@ stm:      TK_IF exp TK_ARROW stms elses TK_FI   // if
         | TK_FA TK_ID { yFa($2); } TK_ASSIGN exp TK_TO exp TK_ARROW stms TK_AF
 		{ $$ = mkFa(mkId($2), $5, $7, $9); }
         | exp TK_SEMI
-		{ $$ = $1; }
+		{ $$ = mkExpStm($1); }
         | TK_BREAK TK_SEMI
 		{ $$ = mkBreak(NULL); }
         | TK_EXIT TK_SEMI
@@ -261,9 +259,9 @@ exp:	  lvalue	{ $$ = $1; }
 	| TK_SLIT	{ $$ = mkSlit($1); }
 	| TK_READ	{ $$ = mkRead(); }
 	| TK_MINUS exp %prec UMINUS
-		{ $$ = mkBinop(B_SUB, mkIlit(0), $2); }
+		{ $$ = mkUniop(B_SUB, $2); }
 	| TK_QUEST exp
-		{ $$ = mkQuest($2); } // @@@ TBD
+		{ $$ = mkUniop(B_QUEST, $2); }
 	| TK_ID TK_LPAREN TK_RPAREN
 		{ $$ = yCall($1, NULL); }
 	| TK_ID TK_LPAREN explist TK_RPAREN
@@ -276,6 +274,8 @@ exp:	  lvalue	{ $$ = $1; }
 		{ $$ = mkBinop(B_MUL, $1, $3); }
 	| exp TK_SLASH exp
 		{ $$ = mkBinop(B_DIV, $1, $3); }
+	| exp TK_MOD exp
+		{ $$ = mkBinop(B_MOD, $1, $3); }
 	| exp TK_EQ exp
 		{ $$ = mkBinop(B_EQ, $1, $3); }
 	| exp TK_NEQ exp
@@ -310,8 +310,8 @@ static void usage(char *prog)
 	  "\t-t:\tshow parse tree (does semantic analysis)\n"
 	  "\t-g:\tshow parse tree, with signatures\n"
 	  "\t-s:\tshow symbol tables\n"
-	  "\t-n:\tsuppress code generation\n"
-	  "\t-c:\tcompile to native code (from C code)\n"
+	  "\t-c:\tgenerate C code\n"
+	  "\t-n:\tcompile to native code (from C code)\n"
 	  "\t-e <n>:\tset error limit to n, 0 ==> infinity (default: 1)\n"
 	  "\t-o <f>:\tset output filename to f\n"
 	  "\t-v:\tincrease verbose level\n");
@@ -327,7 +327,7 @@ int main(int argc, char *argv[])
   int c;
   Sig g, g2;
   FILE *fd;
-  int treePrint=0, tablePrint=0, genCode = 1, toC = 0;
+  int treePrint=0, tablePrint=0, genCode = 0, toC = 0;
 
   while ( (c = getopt(argc, argv, OPTS)) != EOF ) {
     switch ( c ) {
@@ -337,8 +337,8 @@ int main(int argc, char *argv[])
       break;
     case 't':	treePrint = 1;			break;
     case 's':	tablePrint = 1;			break;
-    case 'n':	genCode = 0;			break;
-    case 'c':	toC = 1;			break;
+    case 'c':	genCode = 1;			break;
+    case 'n':	toC = 1; genCode =1;		break;
     case 'g':	SigPrint = treePrint = 1;	break;
     case 'o':   outfile = optarg;		break;
     case 'e':	
@@ -352,10 +352,6 @@ int main(int argc, char *argv[])
     default:
       usage(argv[0]);
     }
-  }
-  if (toC && !genCode) {
-    fprintf(stderr, "arg c not compatible with arg n\n");
-    usage(argv[0]);
   }
   if (!DoSemantic && genCode) {
     fprintf(stderr, "cannot generate code without semantic analysis\n");

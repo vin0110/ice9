@@ -76,6 +76,7 @@ exp	-> lvalue
 	-> exp '-' exp
 	-> exp '*' exp
 	-> exp '/' exp
+	-> exp '%' exp
 	-> exp '=' exp
 	-> exp '!=' exp
 	-> exp '>' exp

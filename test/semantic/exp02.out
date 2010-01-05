@@ -1,0 +1,3 @@
+BINOP(B_DIV): [T_INT(1)]
+  ILIT:1 [T_INT(1)]
+  ILIT:2 [T_INT(1)]

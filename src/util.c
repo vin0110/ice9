@@ -8,21 +8,15 @@ static int Errors=0;
 int ErrorLimit=1;
 int VerboseLevel=0;
 
-static void warning(int l, char *note, char *fmt, ...)
-{
-  va_list ap;
-  va_start(ap,fmt);
-  if (l <= 0)
-    l = LINE;
-  fprintf(stderr, "%sline %d: ", note, l);
-  fprintf(stderr, fmt, ap);
-}
+#define FIRST_PART(l,n) \
+  do{if (l<=0) l = LINE;fprintf(stderr,"%sline %d: ",n,l);} while (0)
 
 void Warning(int l, char *fmt, ...)
 {
   va_list ap;
   va_start(ap,fmt);
-  warning(l, "warning: ", fmt, ap);
+  FIRST_PART(l,"warning: ");
+  vfprintf(stderr, fmt, ap);
   va_end(ap);
 }
 
@@ -30,7 +24,8 @@ void Fatal(int l, char *fmt, ...)
 {
   va_list ap;
   va_start(ap,fmt);
-  warning(l, "FATAL ERROR: ", fmt, ap);
+  FIRST_PART(l,"FATAL ERROR: ");
+  vfprintf(stderr, fmt, ap);
   va_end(ap);
   if (++Errors == ErrorLimit)
     exit(-1);
@@ -40,8 +35,11 @@ void FatalS(int l, char *fmt, ...)
   if (DoSemantic) {
     va_list ap;
     va_start(ap,fmt);
-    Fatal(l, fmt, ap);
+    FIRST_PART(l,"FATAL ERROR: ");
+    vfprintf(stderr, fmt, ap);
     va_end(ap);
+    if (++Errors == ErrorLimit)
+      exit(-1);
   }
 }
 
@@ -49,7 +47,8 @@ void CompilerError(int l, char *fmt, ...)
 {
   va_list ap;
   va_start(ap,fmt);
-  warning(l, "COMPILER ERROR: ", fmt, ap);
+  FIRST_PART(l,"COMPILER ERROR: ");
+  vfprintf(stderr, fmt, ap);
   va_end(ap);
   exit(-2);
 }

@@ -25,18 +25,19 @@
 typedef List Table;
 typedef struct {
   char *name;
-  void *info;
+  void  *info;	/* is a Sig, but use void * to avoid circular defintions. */
 } *Symbol, symbol_t;
 
 Table tabMake();
 int tabDestroy(Table);
 void tabPrint(Table);
+void symPrint(Symbol);
 Symbol symLookup(Table, char *key);
 int symInsert(Table, Symbol);
 int tabPop(Table);
 int tabPush(Table);
 int tabLevel(Table);
-Symbol symMake(char *key, void *info);
+Symbol symMake(char *, void *);
 int symDestroy(Symbol);
 char *symStr(char *);
 

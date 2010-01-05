@@ -11,11 +11,11 @@ p2:
 	python $(TEST) -r parse
 
 p3:	
-	python $(TEST) -r symtab
+	python $(TEST) -r semantic
 
 p4:	
 	python $(TEST) -r cg
 
 
 clean:
-	rm -f */*.swp */*~ */_ice9.c lex/*.c parse/*.c symtab/*.c cg/*.c
+	rm -f */*.swp */*~ */_ice9.c lex/*.c parse/*.c semantic/*.c cg/*.c

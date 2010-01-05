@@ -32,13 +32,15 @@ typedef enum {
   B_SUB,
   B_MUL,
   B_DIV,
+  B_MOD,
   B_EQ,
   B_NEQ,
   B_LT,
   B_GT,
   B_LE,
   B_GE,
-  B_ERR
+  B_ERR,
+  B_QUEST,
 } Binop;
 
 /* all operators use oper, sig, n_loc fields */
@@ -65,8 +67,8 @@ typedef enum {			/* addtional fields that are used */
   O_RETURN,			/* n_r */
   O_ASSIGN,			/* n_l, n_r */
   O_BINOP,			/* n_binop, n_l, n_r */
+  O_UNIOP,			/* n_binop, n_r */
   O_CALL,			/* n_l, n_r */
-  O_QUEST,			/* n_r */
   O_ERR
 } Oper;
 
@@ -91,6 +93,7 @@ typedef struct _node {
 #define n_xtra	n_u.u_xtra
 
 Node mkSeq(Node, Node);
+Node mkExpStm(Node);
 Node mkExp(Node);
 Node mkId(char *);
 Node mkSym(Symbol, Node);
@@ -110,9 +113,9 @@ Node mkWrite(int, Node); /* int is nl? */
 Node mkRead();
 Node mkBreak();
 Node mkReturn();
-Node mkQuest(Node);
 Node mkAssign(Node, Node);
 Node mkBinop(Binop, Node, Node);
+Node mkUniop(Binop, Node);
 Node mkCall(char *, Node);
 void nodePrint(int, Node);
 
