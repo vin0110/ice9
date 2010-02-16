@@ -21,8 +21,8 @@ program	-> {var|type|forward|proc} stms
 # 3 complex tokens (these are usually handled in the lexer)
 id	-> [A-Za-z][A-Za-z0-9_]*
 int	-> [0-9]+		# decimal integer literal
-string  -> "[^"\n]" 		# double-quoted string: any char but " and \n
-	-> '[^'\n]'  		# single-quoted string: any char but ' and \n
+string  -> "[^"\n]*" 		# double-quoted string: any char but " and \n
+	-> '[^'\n]*'  		# single-quoted string: any char but ' and \n
 
 stms	-> stm { stm }		# there is at least one stm
 
@@ -44,10 +44,10 @@ proc	-> 'proc' id '(' declist ')'
 	-> 'proc' id '(' declist ')' ':' typeid 
 		{type|var} {stm} 'end'
 
-idlist  -> id {, id}
+idlist  -> id { ',' id}
 
 var	-> 'var' varlist
-varlist  -> idlist ':' typeid { '[' int ']' } {, varlist}
+varlist  -> idlist ':' typeid { '[' int ']' } { ',' varlist}
 
 forward -> 'forward' id '(' declist ')'
 	-> 'forward' id '(' declist ')' ':' typeid
@@ -106,7 +106,7 @@ Extends from the first sharp (#) on a line to the end of the line
 
    is not semantically correct.  Instead use
 
-	if x = 1 -> ... fi
+	if x != 0 -> ... fi
 
 2. The 'fa' statement
 
@@ -114,9 +114,10 @@ Extends from the first sharp (#) on a line to the end of the line
 
    executes the body once for every value of loop between lo and hi,
    inclusive.  The expressions in 'fa' must be int.  The expressions
-   are executed exactly once and the body is executed from hi - lo + 1
+   are executed exactly once and the body is executed at most hi - lo + 1
    times.  The loop variable is an int and it is not assignable in the
-   body of the loop.
+   body of the loop.  If hi = lo, the loop executes once.  If hi < lo, 
+   the statements in the loop are not executed.
 
 3. The rule
 
@@ -127,7 +128,7 @@ Extends from the first sharp (#) on a line to the end of the line
    represents an id referring to a type (found in a different symbol
    table from the other ids).
 
-4. The read expression returns an string.  Thus
+4. The read expression returns an integer.  Thus
 
 	var a: int
 	a := read;
@@ -148,7 +149,7 @@ Extends from the first sharp (#) on a line to the end of the line
 
 7. The exit statement terminates the program.
 
-8. Statements in the outermost scope are execute in order at startup.
+8. Statements in the outermost scope are executed in order at startup.
 (Think of the outermost scope as being the C main procedure.)
 
 9. Boolean expression are short-circuit evaluated.  For example, in the
@@ -243,8 +244,8 @@ following code, both write statements output '5'.
 
 	var a: string
 	var b: int
-	a := "5"
-	b := int(a)
+	a := "5";
+	b := int(a);
 	write a;
 	write b;
 
@@ -271,11 +272,8 @@ two records with the same structure are equivalent even if different
 names are used.
 
 2. Basic types are passed by value.  Array parameters are passed by
-reference. 
+reference, similar to the C calling convention. 
 
 3. In forward declarations, the name of the parameters are not
 important.  Only the names of the parameters in the actual proc
 declaration are meaningful.
-
-4. Parameters are passed by value.  Array parameters pass the location
-by value, similar to the C calling convention.
