@@ -1,7 +1,9 @@
 # factorial program
 proc fact(n: int) : int
-  if (n <= 1) -> fact := n;
-  [] else -> fact := n * fact(n-1);
+  if (n <= 1) -> 
+     fact := n;
+  [] else ->
+     fact := n * fact(n-1);
   fi
 end
 

@@ -126,12 +126,12 @@ void yyerror(char *s)
 
 %left TK_SEMI
 %nonassoc TK_LBRACK
-%right TK_ASSIGN
+%nonassoc TK_ASSIGN
 
 %nonassoc TK_EQ TK_NEQ TK_GT TK_LT TK_GE TK_LE
 %left TK_PLUS TK_MINUS
 %left TK_STAR TK_SLASH TK_MOD
-%nonassoc UMINUS
+%nonassoc UMINUS TK_QUEST
 
 %start program
 
