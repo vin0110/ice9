@@ -248,6 +248,10 @@ Node yProcPre(char *id, Node params, Node rettype)
 
 Node yProcPost(Node decls, Node stms)
 {
+#ifdef TM
+  // set locations of variables
+  varSetLocation(Vars);
+#endif
   tabPop(Vars);
   tabPop(Types);
 

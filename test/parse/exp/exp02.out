@@ -1,6 +1,6 @@
-BINOP(B_SUB):
-  ILIT:0
-  ID:'x'
-BINOP(B_SUB):
-  ILIT:0
-  ILIT:8
+EXP:
+  UNIOP(B_SUB):
+    ID:'x'
+EXP:
+  UNIOP(B_SUB):
+    ILIT:8

@@ -1,5 +1,6 @@
-BINOP(B_MUL): [T_INT(1)]
-  BINOP(B_ADD): [T_INT(1)]
-    ILIT:1 [T_INT(1)]
-    ILIT:2 [T_INT(1)]
-  ILIT:3 [T_INT(1)]
+EXP:
+  BINOP(B_MUL):
+    BINOP(B_ADD):
+      ILIT:1
+      ILIT:2
+    ILIT:3

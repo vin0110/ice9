@@ -122,5 +122,13 @@ void sigPrint(Sig g)
   }
 }
 
+int sigSize(Sig g) {
+  if (!g) return 0;
+  if (g->type == T_ARRAY)
+    return g->size * sigSize(g->under);
+  else
+    return 1;
+}
+
 /*........................ end of type.c ....................................*/
 

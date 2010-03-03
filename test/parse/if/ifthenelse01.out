@@ -1,11 +1,14 @@
 IF:
   ID:'a'
 (then)
-  ID:'b'
+  EXP:
+    ID:'b'
 (else)
   IF:
     ID:'c'
   (then)
-    ID:'d'
+    EXP:
+      ID:'d'
   (else)
-    ID:'e'
+    EXP:
+      ID:'e'

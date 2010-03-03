@@ -1,25 +1,30 @@
-ARR:
-  ID:'a'
+EXP:
   ARR:
     ID:'a'
+    ARR:
+      ID:'a'
+      ILIT:2
+EXP:
+  ARR:
+    ARR:
+      ID:'a'
+      ILIT:2
     ILIT:2
-ARR:
+EXP:
   ARR:
     ID:'a'
-    ILIT:2
-  ILIT:2
-ARR:
-  ID:'a'
-  CALL:
-    ID:'f'
-  (arglist)
-    nil
-ARR:
-  ID:'a'
-  BINOP(B_ADD):
-    ILIT:1
-    ILIT:2
-ARR:
+    EXP:
+      CALL:
+        ID:'f'
+      (arglist)
+        nil
+EXP:
+  ARR:
+    ID:'a'
+    BINOP(B_ADD):
+      ILIT:1
+      ILIT:2
+EXP:
   ARR:
     ARR:
       ARR:
@@ -27,12 +32,13 @@ ARR:
           ARR:
             ARR:
               ARR:
-                ID:'a'
-                ILIT:1
-              ILIT:2
-            ILIT:3
-          ILIT:4
-        ILIT:5
-      ILIT:6
-    ILIT:7
-  ILIT:8
+                ARR:
+                  ID:'a'
+                  ILIT:1
+                ILIT:2
+              ILIT:3
+            ILIT:4
+          ILIT:5
+        ILIT:6
+      ILIT:7
+    ILIT:8

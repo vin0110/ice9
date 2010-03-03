@@ -3,9 +3,11 @@ IF:
     ID:'foo'
     ID:'bar'
 (then)
-  CALL:
-    ID:'a'
-  (arglist)
-    nil
+  EXP:
+    EXP:
+      CALL:
+        ID:'a'
+      (arglist)
+        nil
 (else)
   nil

@@ -1,6 +1,7 @@
 IF:
   ILIT:1
 (then)
-  ILIT:1
+  EXP:
+    ILIT:1
 (else)
   nil

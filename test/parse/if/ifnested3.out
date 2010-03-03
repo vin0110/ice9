@@ -4,8 +4,10 @@ IF:
   IF:
     ID:'b'
   (then)
-    ID:'c'
+    EXP:
+      ID:'c'
   (else)
     nil
 (else)
-  ID:'d'
+  EXP:
+    ID:'d'

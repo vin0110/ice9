@@ -1,45 +1,57 @@
-CALL:
-  ID:'a'
-(arglist)
-  nil
-CALL:
-  ID:'a'
-(arglist)
-  ID:'b'
-CALL:
-  ID:'a'
-(arglist)
-  ID:'b'
-  ID:'c'
-CALL:
-  ID:'a'
-(arglist)
-  ID:'b'
-  ID:'c'
-  ID:'d'
-  ID:'e'
-  ID:'f'
-  ID:'g'
-  ID:'h'
-  ID:'i'
-  ID:'j'
-  ID:'k'
-  ID:'l'
-CALL:
-  ID:'a'
-(arglist)
-  BINOP(B_ADD):
-    ID:'b'
-    ID:'c'
-CALL:
-  ID:'a'
-(arglist)
-  BINOP(B_ADD):
-    ID:'b'
-    ID:'c'
-  BINOP(B_ADD):
-    ID:'d'
-    ID:'e'
-  BINOP(B_ADD):
-    ID:'f'
-    ID:'g'
+EXP:
+  EXP:
+    CALL:
+      ID:'a'
+    (arglist)
+      nil
+EXP:
+  EXP:
+    CALL:
+      ID:'a'
+    (arglist)
+      ID:'b'
+EXP:
+  EXP:
+    CALL:
+      ID:'a'
+    (arglist)
+      ID:'b'
+      ID:'c'
+EXP:
+  EXP:
+    CALL:
+      ID:'a'
+    (arglist)
+      ID:'b'
+      ID:'c'
+      ID:'d'
+      ID:'e'
+      ID:'f'
+      ID:'g'
+      ID:'h'
+      ID:'i'
+      ID:'j'
+      ID:'k'
+      ID:'l'
+EXP:
+  EXP:
+    CALL:
+      ID:'a'
+    (arglist)
+      BINOP(B_ADD):
+        ID:'b'
+        ID:'c'
+EXP:
+  EXP:
+    CALL:
+      ID:'a'
+    (arglist)
+      BINOP(B_ADD):
+        ID:'b'
+        ID:'c'
+      BINOP(B_ADD):
+        ID:'d'
+        ID:'e'
+      BINOP(B_ADD):
+        ID:'f'
+        ID:'g'
