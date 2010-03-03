@@ -117,7 +117,9 @@ Extends from the first sharp (#) on a line to the end of the line
    are executed exactly once and the body is executed at most hi - lo + 1
    times.  The loop variable is an int and it is not assignable in the
    body of the loop.  If hi = lo, the loop executes once.  If hi < lo, 
-   the statements in the loop are not executed.
+   the statements in the loop are not executed.  The scope of the loop
+   variable is the fa statment: from fa to af.  It's declaration hides
+   any previously declared variable with the same name.
 
 3. The rule
 
@@ -163,9 +165,9 @@ Extends from the first sharp (#) on a line to the end of the line
 #################
 
 There are three symbol tables in ice9.  One each for types, variables,
-and procedures.  Initially, the types symbol table consists of two
-entries: 'int' and 'bool' which resolve to the two basic types.  The
-two other table are initially empty.
+and procedures.  Initially, the types symbol table consists of three
+entries: 'int', 'bool', and 'str' which resolve to the three basic types.
+The procedure table is initially loaded with 'int' the built operation.
 
 
 #################
@@ -242,7 +244,7 @@ a bool:
 The builtin function int() converts a string to an integer.  In the
 following code, both write statements output '5'.
 
-	var a: string
+	var a: str
 	var b: int
 	a := "5";
 	b := int(a);
