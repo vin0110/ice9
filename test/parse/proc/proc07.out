@@ -2,7 +2,10 @@ PROC: a
 (return)
   nil
 (body)
-  CALL:
-    ID:'g'
-  (arglist)
-    nil
+  EXP:
+    EXP:
+      CALL:
+        ID:'g'
+      (arglist)
+        nil
+nil

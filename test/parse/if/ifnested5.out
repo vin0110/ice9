@@ -13,44 +13,55 @@ IF:
         IF:
           ID:'e'
         (then)
-          CALL:
-            ID:'f'
-          (arglist)
-            nil
+          EXP:
+            EXP:
+              CALL:
+                ID:'f'
+              (arglist)
+                nil
         (else)
           IF:
             ID:'g'
           (then)
-            CALL:
-              ID:'h'
-            (arglist)
-              nil
+            EXP:
+              EXP:
+                CALL:
+                  ID:'h'
+                (arglist)
+                  nil
           (else)
             nil
       (else)
-        CALL:
-          ID:'i'
-        (arglist)
-          nil
+        EXP:
+          EXP:
+            CALL:
+              ID:'i'
+            (arglist)
+              nil
     (else)
       IF:
         ID:'j'
       (then)
-        CALL:
-          ID:'k'
-        (arglist)
-          nil
+        EXP:
+          EXP:
+            CALL:
+              ID:'k'
+            (arglist)
+              nil
       (else)
         nil
   (else)
-    CALL:
-      ID:'l'
-    (arglist)
-      nil
+    EXP:
+      EXP:
+        CALL:
+          ID:'l'
+        (arglist)
+          nil
 (else)
   IF:
     ID:'m'
   (then)
-    ID:'n'
+    EXP:
+      ID:'n'
   (else)
     nil

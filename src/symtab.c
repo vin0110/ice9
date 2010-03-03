@@ -79,6 +79,26 @@ void tabPrint(Table t)
   listApplyAll(t, tabPrint1, &level);
 }
 
+static int setloc(void *a, void *b)
+{
+  List l = (List)a;
+  void *item;
+  Symbol sym;
+  int offset = 0;
+
+  for (item = listFirst(l); item != NULL; item = listNext(l)) {
+    sym = (Symbol)item;
+    sym->location = offset;
+    offset += sigSize((Sig)sym->info);
+    printf("%s: %d\n", sym->name, sym->location);
+  }
+}
+
+void varSetLocation(Table t)
+{
+  listApplyAll(t, setloc, NULL);
+}
+
 void symPrint(Symbol sym)
 {
   if (!sym) return;
@@ -170,6 +190,7 @@ Symbol symMake(char *key, void *info)
 
   sym->name = symStr(key);
   sym->info = info;
+  sym->location = -1;
   return sym;
 }
 

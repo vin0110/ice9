@@ -42,6 +42,7 @@ void sigDestroy(Sig);
 Sig sigCopy(Sig);
 int sigCmp(Sig, Sig);
 void sigPrint(Sig);
+int sigSize(Sig);
 
 #endif /* TYPE_H */
 /*........................ end of type.h ....................................*/

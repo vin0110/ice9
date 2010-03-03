@@ -2,4 +2,6 @@ PROC: a
 (return)
   nil
 (body)
-  ILIT:2
+  EXP:
+    ILIT:2
+nil

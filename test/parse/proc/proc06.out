@@ -5,3 +5,4 @@ PROC: a
   ASSIGN:
     ID:'a'
     ILIT:2
+nil

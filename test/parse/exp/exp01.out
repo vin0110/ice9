@@ -1,5 +1,10 @@
-ILIT:1
-BLIT: TRUE
-BLIT: FALSE
-SLIT:'bbabdbd'
-READ:
+EXP:
+  ILIT:1
+EXP:
+  BLIT: TRUE
+EXP:
+  BLIT: FALSE
+EXP:
+  SLIT:'bbabdbd'
+EXP:
+  READ:

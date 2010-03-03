@@ -4,8 +4,11 @@ IF:
   IF:
     ID:'b'
   (then)
-    ID:'c'
+    EXP:
+      ID:'c'
   (else)
-    ID:'d'
+    EXP:
+      ID:'d'
 (else)
-  ID:'e'
+  EXP:
+    ID:'e'

@@ -28,7 +28,11 @@
 #include "symtab.h"
 #include "type.h"
 #include "yhelp.h"
+#ifdef TM
+#include "cg_tm.h"
+#else
 #include "cg.h"
+#endif
 
 //#define YY_MAIN
 
@@ -300,8 +304,11 @@ extern int optind, opterr, optopt;
 int getopt(int argc, char * const argv[], const char *optstring);
 extern int VerboseLevel;
 
+#ifdef TM
+#define OPTS	"ptgsce:o:vh"
+#else
 #define OPTS	"ptgsnce:o:vh"
-
+#endif
 static void usage(char *prog)
 {
   fprintf(stderr, "%s [%s] <filename>\n", prog, OPTS);
@@ -310,8 +317,12 @@ static void usage(char *prog)
 	  "\t-t:\tshow parse tree (does semantic analysis)\n"
 	  "\t-g:\tshow parse tree, with signatures\n"
 	  "\t-s:\tshow symbol tables\n"
+#ifdef TM
+	  "\t-c:\tgenerate TM code\n"
+#else
 	  "\t-c:\tgenerate C code\n"
 	  "\t-n:\tcompile to native code (from C code)\n"
+#endif
 	  "\t-e <n>:\tset error limit to n, 0 ==> infinity (default: 1)\n"
 	  "\t-o <f>:\tset output filename to f\n"
 	  "\t-v:\tincrease verbose level\n");
@@ -327,7 +338,7 @@ int main(int argc, char *argv[])
   int c;
   Sig g, g2;
   FILE *fd;
-  int treePrint=0, tablePrint=0, genCode = 0, toC = 0;
+  int treePrint=0, tablePrint=0, genCode = 0, native = 0;
 
   while ( (c = getopt(argc, argv, OPTS)) != EOF ) {
     switch ( c ) {
@@ -338,7 +349,9 @@ int main(int argc, char *argv[])
     case 't':	treePrint = 1;			break;
     case 's':	tablePrint = 1;			break;
     case 'c':	genCode = 1;			break;
-    case 'n':	toC = 1; genCode =1;		break;
+#ifndef TM
+    case 'n':	native = 1; genCode =1;		break;
+#endif
     case 'g':	SigPrint = treePrint = 1;	break;
     case 'o':   outfile = optarg;		break;
     case 'e':	
@@ -424,8 +437,8 @@ int main(int argc, char *argv[])
     int len;
 
     // create output
-    fclose(fd);
-    if (toC) {
+    //fclose(fd);
+    if (native) {
       if (outfile == str) {
 	strcpy(str, FileName);
 	len = strlen(str);
@@ -442,7 +455,11 @@ int main(int argc, char *argv[])
       if (str[len-2] == '.' && str[len-1] == '9') {
 	str[len-2] = '\0';
       }
+#ifdef TM
+      strcat(str, ".tm");
+#else
       strcat(str, ".c");
+#endif
     }
     fd = fopen(outfile, "w");
     if (fd == NULL) {
@@ -450,10 +467,15 @@ int main(int argc, char *argv[])
       sprintf(buf, "couldn't open output file %s", outfile);
       perror(buf);
       exit(-1);
-    } 
+    }
+
+#ifdef TM
+    // set locations of variables
+    varSetLocation(Vars);
+#endif
     cgGen(fd, Root);
     fclose(fd);
-    if (toC) {
+    if (native) {
       char buf[128];
       sprintf(buf, "gcc -g -o %s %s", cout, outfile);
       printf("%s\n", buf);

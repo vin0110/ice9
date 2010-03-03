@@ -1,6 +1,8 @@
 IF:
   BLIT: TRUE
 (then)
-  ID:'a'
+  EXP:
+    ID:'a'
 (else)
-  ID:'b'
+  EXP:
+    ID:'b'

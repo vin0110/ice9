@@ -7,7 +7,9 @@ DO:
     DO:
       ID:'c'
     (body)
-      CALL:
-        ID:'d'
-      (arglist)
-        nil
+      EXP:
+        EXP:
+          CALL:
+            ID:'d'
+          (arglist)
+            nil

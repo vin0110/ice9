@@ -1,4 +1,5 @@
 DO:
   ID:'a'
 (body)
-  ILIT:2
+  EXP:
+    ILIT:2

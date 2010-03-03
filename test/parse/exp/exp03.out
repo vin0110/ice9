@@ -1,4 +1,6 @@
-QUEST:
-  ID:'v'
-QUEST:
-  SLIT:'hkkjl'
+EXP:
+  UNIOP(B_QUEST):
+    ID:'v'
+EXP:
+  UNIOP(B_QUEST):
+    SLIT:'hkkjl'

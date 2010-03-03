@@ -1,29 +1,36 @@
-BINOP(B_SUB):
-  ID:'a'
-  ID:'b'
-BINOP(B_SUB):
+EXP:
   BINOP(B_SUB):
     ID:'a'
     ID:'b'
-  ID:'c'
-BINOP(B_DIV):
-  ID:'a'
-  ID:'b'
-BINOP(B_DIV):
-  BINOP(B_MUL):
+EXP:
+  BINOP(B_SUB):
+    BINOP(B_SUB):
+      ID:'a'
+      ID:'b'
+    ID:'c'
+EXP:
+  BINOP(B_DIV):
     ID:'a'
     ID:'b'
-  ID:'c'
-BINOP(B_EQ):
-  ID:'a'
-  ID:'b'
-BINOP(B_NEQ):
+EXP:
+  BINOP(B_DIV):
+    BINOP(B_MUL):
+      ID:'a'
+      ID:'b'
+    ID:'c'
+EXP:
   BINOP(B_EQ):
     ID:'a'
     ID:'b'
-  ID:'c'
-BINOP(B_LT):
-  ID:'a'
-  BINOP(B_LT):
-    ID:'b'
+EXP:
+  BINOP(B_NEQ):
+    BINOP(B_EQ):
+      ID:'a'
+      ID:'b'
     ID:'c'
+EXP:
+  BINOP(B_LT):
+    ID:'a'
+    BINOP(B_LT):
+      ID:'b'
+      ID:'c'

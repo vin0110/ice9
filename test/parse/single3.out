@@ -1,1 +1,2 @@
-SLIT:'this is a string'
+EXP:
+  SLIT:'this is a string'
