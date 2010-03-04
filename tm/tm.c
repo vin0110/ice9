@@ -48,6 +48,8 @@ char *versionNumber ="TM version 2.7.2";
 #define TRACE 1
 #define NOTRACE 0
 #define NOTUSED -1
+#define DATA -2
+#define SDATA -3
 #define USED 1
 
 /******* const *******/
@@ -414,6 +416,7 @@ int readInstructions(char *fileName)
     OPCODE op;
     int arg1, arg2, arg3;
     int loc, regNo, lineNo;
+    static int datamem=1;
 
     /* load program */
     if (*fileName!='\0') strcpy(pgmName, fileName);
@@ -439,7 +442,46 @@ int readInstructions(char *fileName)
 	    in_Line[lineLen] = '\0';
 	else
 	    in_Line[++lineLen] = '\0';
-	if ((nonBlank()) && (in_Line[inCol] != '*')) {
+	if ((nonBlank()) && (in_Line[inCol] == '.')) {
+	  /* processing data statement */
+	  if (!strncmp(".SDATA", in_Line+inCol, strlen(".SDATA"))) {
+	    inCol += strlen(".SDATA");
+	    for ( ; inCol < lineLen; inCol++)
+	      if (in_Line[inCol] != ' ' && in_Line[inCol] != '\t')
+		break;
+	    if (inCol >= lineLen)
+	      return error("Illegal sdata statement--no data", lineNo, loc);
+	    if (in_Line[inCol] != '"')
+	      return error("Illegal sdata statement--invalid format", 
+			   lineNo, loc);
+	    { int start=++inCol;
+	      for ( ; inCol < lineLen; inCol++)
+		if (in_Line[inCol] == '"')
+		    break;
+	      if (in_Line[inCol] !=  '"')
+		return error("Illegal sdata statement--format invalid", 
+			     lineNo, loc);
+	      for ( ; start < inCol; start++) {
+		dMemTag[datamem] = SDATA;
+		dMem[datamem++] = in_Line[start];
+	      }
+	    }
+	  }
+	  else if (!strncmp(".DATA", in_Line+inCol, strlen(".DATA"))) {
+	    inCol += strlen(".DATA");
+	    for ( ; inCol < lineLen; inCol++)
+	      if (in_Line[inCol] != ' ' && in_Line[inCol] != '\t')
+		break;
+	    if (inCol >= lineLen)
+	      return error("Illegal data statement--no data", lineNo, loc);
+	    dMemTag[datamem] = DATA;
+	    dMem[datamem++] = atoi(in_Line+inCol);
+	  }
+	  else {
+	    return error("Illegal data statement", lineNo, loc);
+	  }
+	}
+	else if ((nonBlank()) && (in_Line[inCol] != '*')) {
 	    if (!getNum())
 		return error("Bad location", lineNo, -1);
 	    loc = num;
@@ -929,9 +971,24 @@ int doCommand(void)
             printf("%5s: %5s", "addr", "value");
             printf("    %s\n", "instr that last assigned this loc");
             while ((dloc >= 0) && (dloc<DADDR_SIZE) && (printcnt>0)) {
-                printf("%5d: %5d", dloc, dMem[dloc]);
-                if (dMemTag[dloc]>=0) printf("    %d\n", dMemTag[dloc]);
-                else printf("    %s\n", "unused");
+		switch (dMemTag[dloc]) {
+		case NOTUSED:
+		  printf("%5d: %5d", dloc, dMem[dloc]);
+		  printf("    %s\n", "unused");
+		  break;
+		case DATA:
+		  printf("%5d: %5d", dloc, dMem[dloc]);
+		  printf("    %s\n", "data");
+		  break;
+		case SDATA:
+		  printf("%5d:   '%c'", dloc, dMem[dloc]);
+		  printf("    %s\n", "data");
+		  break;
+		default:
+		  printf("%5d: %5d", dloc, dMem[dloc]);
+		  printf("    %d\n", dMemTag[dloc]);
+		  break;
+		}
                 if (down) dloc--;
                 else dloc++;
                 printcnt--;
