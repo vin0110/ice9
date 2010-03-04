@@ -1,0 +1,172 @@
+======================================================================
+ TM 2.7 - Tiny Machine a simple VM borrowed from K. Louden and 
+	Robert Heckendorn
+======================================================================
+
+DATA LAYOUT
+-----------
+
+8 registers:  0-7 
+ register 7 is the program counter and is denoted PC below 
+ All registers are initialized to 0.
+
+iMem instruction memory
+  each memory location contains both an instruction and a comment.  The
+     comment is very useful in debugging!
+  iMem is initialized to Halt instructions and the comment: "* initially empty"
+
+dMem data memory
+ dMem[0] is initialized with the address of the last element in dMem.
+ The rest of dMem is zeroed. 
+
+REGISTER ONLY INSTRUCTIONS  (RO instructions)
+--------------------------------------------
+HALT           stop execution (all registers ignored)
+
+IN r           reg[r] <- input integer value of register r from stdin
+OUT r          reg[r] -> output integer value of register r to stdout
+INB r          reg[r] <- input boolean value of register r from stdin
+OUTB r         reg[r] -> output boolean value of register r to stdout
+OUTC r         reg[r] -> output ASCII character of register r to stdout
+OUTNL                    output a newline to stdout
+
+ADD r, s, t    reg[r] = reg[s] + reg[t]
+SUB r, s, t    reg[r] = reg[s] - reg[t]
+MUL r, s, t    reg[r] = reg[s] * reg[t]
+DIV r, s, t    reg[r] = reg[s] / reg[t]
+
+REGISTER TO MEMORY INSTRUCTIONS  (RM instructions)
+--------------------------------------------
+LDC r, d(x)    reg[r] = d                    (immediate; x ignored)
+LDA r, d(s)    reg[r] = d + reg[s]           (direct)
+LD  r, d(s)    reg[r] = dMem[d + reg[s]]     (indirect)
+
+ST  r, d(s)    dMem[d + reg[s]] = reg[r]
+
+JLT r, d(s)    if reg[r]<0 reg[PC] = d + reg[s]
+JLE r, d(s)    if reg[r]<=0 reg[PC] = d + reg[s] 
+JEQ r, d(s)    if reg[r]==0 reg[PC] = d + reg[s] 
+JNE r, d(s)    if reg[r]!=0 reg[PC] = d + reg[s]
+JGE r, d(s)    if reg[r]>=0 reg[PC] = d + reg[s]
+JGT r, d(s)    if reg[r]>0 reg[PC] = d + reg[s]
+
+
+SOME TM IDIOMS
+--------------
+
+1. reg[r]++:
+
+  LDA r, 1(r)
+
+2. reg[r] = reg[r] + d: 
+ 
+  LDA r, d(r)
+
+3. reg[r] = reg[s]
+
+  LDA r, 0(s)
+
+4. goto reg[r] + d
+ 
+  LDA 7, d(r)
+
+5. goto relative to pc  (d is number of instructions skipped)
+
+  LDA 7, d(7)
+
+6. NOOP:
+
+  LDA r, 0(r)
+
+7. save address of following command for return in reg[r] 
+
+  LDA r, 1(7)
+
+
+
+TM EXECUTION
+------------
+
+This is how execution actually works: 
+    pc <- reg[7]
+    test pc in range
+    reg[7] <- pc+1
+    inst <- fetch(pc)
+    exec(inst)
+
+Notice that at the head of the execution loop above reg[7] points
+to the instruction BEFORE the one about to be executed.  Then
+the first thing the loop will do is increment the PC.  During
+an instruction execution the PC points at the instruction executing.
+
+So LDA 7, 0(7)   does nothing but because it leaves pointer at next instr
+So LDA 7, -1(7) is infinite loop
+
+
+TM COMMANDS (v2.4) 
+------------------
+Commands are:
+ a(bortLimit <<n>> Maximum number of instructions between halts (default=5000).
+ b(reakpoint <<n>> Set a breakpoint for instr n.  No n means clear breakpoints.
+ c(lear            Reset simulator for new execution of program
+ d(Mem <b <n>>     Print n dMem locations starting at b 
+                    (n can be negative to count up, defaults to last values used)
+ e(xecStats        Print execution statistics since last load or clear
+ g(o               Execute TM instructions until HALT
+ h(elp             Cause this list of commands to be printed
+ i(Mem <b <n>>     Print n iMem locations starting at b
+ l(oad filename    Load filename into memory (default is last file)
+ n(ext             Print the next command that will be executed
+ p(rint            Toggle printing of total instructions executed ('go' only)
+ q(uit             Terminate the simulation
+ r(egs             Print the contents of the registers
+ s(tep <n>         Execute n (default 1) TM instructions
+ t(race            Toggle instruction trace
+ u(nprompt)        Unprompted for script input
+ x(it              Terminate the simulation
+ = <r> <n>         Set register number r to value n (e.g. set the pc)
+ (empty line)      does a step like the s command
+Also a # character placed after input will cause TM to halt
+  after processing the IN or INB commands (e.g. 34#  or f# )  That way you
+  can step after input without setting a breakpoint
+
+
+INSTRUCTION INPUT
+-----------------
+Instructions are input via the the load command.
+There commands look like:
+
+address: cmd r,s,t comment
+
+or
+
+address: cmd r,d(s) comment
+
+or 
+
+* comment
+
+For example:
+
+ 39:    ADD  3,4,3 	op + 
+* Add standard closing in case there is no return statement
+ 65:    LDC  2,0(6) 	Set return value to 0 
+ 66:     LD  3,-1(1) 	Load return address 
+ 67:     LD  1,0(1) 	Adjust fp 
+ 68:    LDA  7,0(3) 	Return 
+
+
+======================================================================
+ A Description of the Execution Environment for C-
+======================================================================
+
+THE TM REGISTERS 
+----------------
+These are the assigned registers for our virtual machine.  Only register
+7 is actually configured by the "hardware" to be what it is defined below.
+The rest is whatever we have made it to be.
+
+0,1,2,3,4,5,6 - User defined
+7 - the program counter or pc (used by TM)
+
+
