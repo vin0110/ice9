@@ -91,8 +91,8 @@ exp	-> lvalue
 # Comments #
 ############
 
-Extends from the first sharp (#) on a line to the end of the line
-(determined by the newline character).
+A comment extends from the first sharp (#) on a line to the end of the
+line (determined by the newline character).
 
 #############
 # Semantics #
@@ -114,10 +114,12 @@ Extends from the first sharp (#) on a line to the end of the line
 
    executes the body once for every value of loop between lo and hi,
    inclusive.  The expressions in 'fa' must be int.  The expressions
-   are executed exactly once and the body is executed at most hi - lo + 1
-   times.  The loop variable is an int and it is not assignable in the
-   body of the loop.  If hi = lo, the loop executes once.  If hi < lo, 
-   the statements in the loop are not executed.
+   are executed exactly once and the body is executed at most hi - lo
+   + 1 times.  The fa loop defines a loop variable, whose scope is
+   limited to the fa statement.  The loop variable is an int and it is
+   not assignable in the body of the loop.  If hi = lo, the loop
+   executes once.  If hi < lo, the statements in the loop are not
+   executed.
 
 3. The rule
 
@@ -158,6 +160,24 @@ Extends from the first sharp (#) on a line to the end of the line
 
    	     true + f()
 
+10. Functions (procedures that return a value) are declared by
+    annotating a proc declaration with a return type.  For example:
+
+ 	proc f() : int ... end
+
+    This defines an implicit return variable with the same name as the
+    function.  In the example above there is a local variable named
+    'f' of type int.  The value returned by the function is the value
+    in f when it returns.
+
+11. The break statement is valid only in a fa loop.  It cause
+    execution of the loop to stop.  Control jump immediately to the
+    first statement following the fa loop.
+
+12. The return statement in a proc definition forces a return from the
+    procedure.  A return outside of a proc ... end (at the level of
+    the file) is equivalent to an exit.
+
 #################
 # Symbol Tables #
 #################
@@ -165,7 +185,9 @@ Extends from the first sharp (#) on a line to the end of the line
 There are three symbol tables in ice9.  One each for types, variables,
 and procedures.  Initially, the types symbol table consists of two
 entries: 'int' and 'bool' which resolve to the two basic types.  The
-two other table are initially empty.
+procedure table contains an entry for the built-in function "int".  The
+variables table is empty.  These entries are in the default scope.
+They can be masked by a like definition in another scope.
 
 
 #################
@@ -190,16 +212,16 @@ declarations.  Forward declarations are only defined for procedures.
 
 -  : T -> T, T={int,bool} 	  // unary minus or boolean not
 ?  : bool -> int		  // conversion from boolean to integer
--  : int x int -> int		  // integer substraction
+-  : int x int -> int		  // integer subtraction
 +  : T x T -> T, T={int,bool}	  // integer addition or boolean or
 *  : T x T -> T, T={int,bool}	  // integer multiplication or boolean and
 /  : int x int -> int		  // integer division
-=  : T x T -> bool, T={int,bool}  // comparision, equal
-!= : T x T -> bool, T={int,bool}  // comparision, not equal
->  : int x int -> bool		  // comparision, greater than
-<  : int x int -> bool		  // comparision, less than
->= : int x int -> bool		  // comparision, greater than or equal to
-<= : int x int -> bool		  // comparision, less than or equal to
+=  : T x T -> bool, T={int,bool}  // comparison, equal
+!= : T x T -> bool, T={int,bool}  // comparison, not equal
+>  : int x int -> bool		  // comparison, greater than
+<  : int x int -> bool		  // comparison, less than
+>= : int x int -> bool		  // comparison, greater than or equal to
+<= : int x int -> bool		  // comparison, less than or equal to
 := : T x T -> nil, T={int,bool,str} // assignment
 
 ################################
@@ -239,7 +261,7 @@ a bool:
 
 	b := x != 0;
 
-The builtin function int() converts a string to an integer.  In the
+The built-in function int() converts a string to an integer.  In the
 following code, both write statements output '5'.
 
 	var a: string
@@ -268,7 +290,7 @@ that is < 0 or > size-1 generates a runtime error.
 #########
 
 1. Type checking on user-defined types is structure based.  That is
-two records with the same structure are equivalent even if different
+two types with the same structure are equivalent even if different
 names are used.
 
 2. Basic types are passed by value.  Array parameters are passed by
