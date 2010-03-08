@@ -18,6 +18,22 @@ iMem instruction memory
 dMem data memory
  dMem[0] is initialized with the address of the last element in dMem.
  The rest of dMem is zeroed. 
+ 
+
+DATA STATEMENTS
+---------------
+
+There are two DATA statement, which initialize the dMem in the
+simulator.
+
+ .DATA i		inserts the integer i in the next empty data location
+ .SDATA "string"       	inserts the string i in the next strlen("string")
+ 			empty data locations.  The quotes part of the
+			statement but are not copied.  No EOS ('\0')
+			character is copied either
+
+Because the 0th element of dMem contains the size of the memory, DATA
+statements start inserting data at location 1.
 
 REGISTER ONLY INSTRUCTIONS  (RO instructions)
 --------------------------------------------
@@ -81,7 +97,6 @@ SOME TM IDIOMS
 7. save address of following command for return in reg[r] 
 
   LDA r, 1(7)
-
 
 
 TM EXECUTION

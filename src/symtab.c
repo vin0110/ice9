@@ -79,24 +79,19 @@ void tabPrint(Table t)
   listApplyAll(t, tabPrint1, &level);
 }
 
-static int setloc(void *a, void *b)
+int varSetLocation(Table t)
 {
-  List l = (List)a;
+  List l = listFirst(t);
   void *item;
   Symbol sym;
-  int offset = 0;
+  int offset=0;
 
   for (item = listFirst(l); item != NULL; item = listNext(l)) {
     sym = (Symbol)item;
     sym->location = offset;
     offset += sigSize((Sig)sym->info);
-    printf("%s: %d\n", sym->name, sym->location);
   }
-}
-
-void varSetLocation(Table t)
-{
-  listApplyAll(t, setloc, NULL);
+  return offset;
 }
 
 void symPrint(Symbol sym)
@@ -106,6 +101,7 @@ void symPrint(Symbol sym)
   sigPrint((Sig)sym->info);
   putchar('\n');
 }
+
 Symbol symLookup(Table t, char *key)
 {
   List l;
@@ -150,6 +146,7 @@ int symInsert(Table t, Symbol sym)
     if (!strcmp(m->name, key))
       return -3;
   }
+  sym->level = tabLevel(t);
   return listInsert(l, sym);
 }
 

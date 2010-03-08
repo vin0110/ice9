@@ -5,6 +5,7 @@
 /*                                                            */
 /* v2.7.2  Modified VW Freeh February 23, 2010 		      */
 /*	   Added OUTC instr.				      */
+/*	   Added .DATA and .SDATA directives.		      */
 /* v2.7.1  Modified Robert Heckendorn Nov  13, 2009           */
 /*         bug fix                                            */
 /* v2.7 Modified Robert Heckendorn for CS445 Apr  6, 2006     */

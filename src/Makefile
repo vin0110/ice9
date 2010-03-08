@@ -1,7 +1,6 @@
 #
 # Makefile for ice9
 CC	= gcc
-CFLAGS	= -g -Wall -pedantic -std=c99
 
 # for c code
 #CG=cg
@@ -9,6 +8,8 @@ CFLAGS	= -g -Wall -pedantic -std=c99
 # for tm code
 CG=cg_tm
 CGDEF=-DTM
+
+CFLAGS	= -g -Wall -pedantic -std=c99  $(CGDEF)
 
 LIB	= -lfl
 OBJ	= ice9.yy.o ice9.tab.o util.o list.o symtab.o type.o ast.o yhelp.o $(CG).o
@@ -26,7 +27,7 @@ ice9.tab.h: ice9.y
 	rm -f ice9.tab.c
 
 ice9.tab.o: ice9.tab.c
-	$(CC) $(CFLAGS) $(CGDEF) -c $<
+	$(CC) $(CFLAGS) -c $<
 
 ice9.yy.c: ice9.l ice9.tab.h
 	flex -o$@ $<

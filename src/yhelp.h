@@ -40,7 +40,7 @@ Node yDeclist(ylist, Node, Node);
 Node yInsertType(char *, Node, ylist);
 Node yForward(char *, Node, Node);
 Node yProcPre(char *, Node, Node);
-Node yProcPost(Node, Node);
+Node yProcPost(char *, Node, Node);
 Node yLval(Node);
 Node yQuest(Node);
 Node yCall(char *, Node);

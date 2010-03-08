@@ -232,7 +232,7 @@ Node yProcPre(char *id, Node params, Node rettype)
     symInsert(Procs, m);
   }
   tabPush(Vars);
-  // @@@ add parameters to var symtable
+  // add parameters to var symtable
   t = params;
   while (t) {
     symInsert(Vars, symMake(symStr(t->n_sym->name), t->n_sym->info));
@@ -246,11 +246,12 @@ Node yProcPre(char *id, Node params, Node rettype)
   return mkProc(id, params, rettype, NULL, g);
 }
 
-Node yProcPost(Node decls, Node stms)
+Node yProcPost(char *name, Node decls, Node stms)
 {
 #ifdef TM
   // set locations of variables
-  varSetLocation(Vars);
+  Symbol p = symLookup(Procs, name);
+  p->location = varSetLocation(Vars);
 #endif
   tabPop(Vars);
   tabPop(Types);

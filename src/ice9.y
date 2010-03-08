@@ -193,11 +193,11 @@ pdecl:	  pdecl var	{ if ($1) $$ = mkSeq($1, $2); else $$ = $2; }
 proc:	  TK_PROC TK_ID TK_LPAREN declist TK_RPAREN TK_COLON typeid 
 		{ $<node>$ = yProcPre($2, $4, $7); }
 	  pdecl ostms TK_END		
-		{ $<node>8->n_r = yProcPost($9, $10); $$ = $<node>8; }
+	  	{ $<node>8->n_r = yProcPost($2, $9, $10); $$ = $<node>8; }
 	| TK_PROC TK_ID TK_LPAREN declist TK_RPAREN
 		{ $<node>$ = yProcPre($2, $4, NULL); }
 	  pdecl ostms TK_END		
-		{ $<node>6->n_r = yProcPost($7, $8); $$ = $<node>6; }
+	  	{ $<node>6->n_r = yProcPost($2, $7, $8); $$ = $<node>6; }
 	;
 
 declist:  declst2	{ $$ = $1; }
@@ -303,6 +303,7 @@ extern char *optarg;
 extern int optind, opterr, optopt;
 int getopt(int argc, char * const argv[], const char *optstring);
 extern int VerboseLevel;
+int GlobalAR=0;
 
 #ifdef TM
 #define OPTS	"ptgsce:o:vh"
@@ -371,7 +372,7 @@ int main(int argc, char *argv[])
     usage(argv[0]);
   }
   if (optind == argc) {
-    FileName = "<stdin>";
+    FileName = "stdin";
   }
   else if (optind >= argc ) {
     usage(argv[0]);
@@ -388,7 +389,7 @@ int main(int argc, char *argv[])
   }
 
   Vars = tabMake();
-  tabPush(Vars);
+  //tabPush(Vars);  // add this if we have built-in variables
 
   Procs = tabMake();
   // make builtin function int()
@@ -398,6 +399,7 @@ int main(int argc, char *argv[])
   g2->under = sigMake(T_STR);
   g->next = g2;
   symInsert(Procs, symMake(symStr("int"), g));
+  #if 0
   // make builtin function str()
   g = sigMake(T_PROC);
   g->under = sigMake(T_STR);
@@ -405,6 +407,7 @@ int main(int argc, char *argv[])
   g2->under = sigMake(T_INT);
   g->next = g2;
   symInsert(Procs, symMake(symStr("str"), g));
+  #endif
   tabPush(Procs);
 
   Types = tabMake();
@@ -413,7 +416,7 @@ int main(int argc, char *argv[])
   Gbool = sigMake(T_BOOL);
   symInsert(Types, symMake(symStr("bool"), Gbool));
   Gstr = sigMake(T_STR);
-  symInsert(Types, symMake(symStr("string"), Gstr));
+  symInsert(Types, symMake(symStr("str"), Gstr));
   Gnil = sigMake(T_NIL);
   Gerr = sigMake(T_ERR);
   tabPush(Types);
@@ -471,7 +474,7 @@ int main(int argc, char *argv[])
 
 #ifdef TM
     // set locations of variables
-    varSetLocation(Vars);
+    GlobalAR = varSetLocation(Vars);
 #endif
     cgGen(fd, Root);
     fclose(fd);

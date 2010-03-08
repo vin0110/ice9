@@ -25,6 +25,7 @@
 typedef List Table;
 typedef struct {
   char *name;
+  int level;
   int location;
   void  *info;	/* is a Sig, but use void * to avoid circular defintions. */
 } *Symbol, symbol_t;
@@ -41,7 +42,7 @@ int tabLevel(Table);
 Symbol symMake(char *, void *);
 int symDestroy(Symbol);
 char *symStr(char *);
-void varSetLocation(Table);
+int varSetLocation(Table);
 
 #endif /* SYMTAB_H */
 /*........................ end of symtab.h ..................................*/
