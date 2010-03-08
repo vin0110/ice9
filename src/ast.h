@@ -83,7 +83,7 @@ typedef struct _node {
     int u_xtra;
   } n_u;
   int n_loc;
-  int cg_value;
+  int cg_value, cg_loc;
   struct _node *n_l, *n_r;
 } *Node, node_t;
 

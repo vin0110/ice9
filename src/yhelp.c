@@ -32,6 +32,8 @@ int DoSemantic = 1;
 extern Table Procs, Vars, Types;
 extern Sig Gnil, Gint;
 
+static int procOffset=0;
+
 ylist yList(void *item, ylist tl)
 {
   ylist y = malloc(sizeof(ylist_t));
@@ -75,7 +77,7 @@ Node yInsertVar(ylist ids, Node typeid, ylist array)
   Sig g, h;
   Symbol m;
   Node idlist;
-  Node t;
+  Node t, ret;
 
   if (!DoSemantic) return NULL;
 
@@ -97,16 +99,19 @@ Node yInsertVar(ylist ids, Node typeid, ylist array)
   }
   idlist = idList(ids);
   t = idlist;
+  ret = NULL;
   while (t) {
     if (symLookup(Vars, t->n_str))
       FatalS(LINE, "name clash: id '%s' previously defined\n", (char*)t->n_str);
-    if (symInsert(Vars, symMake(symStr(t->n_str), g)))
+    m = symMake(symStr(t->n_str), g);
+    if (symInsert(Vars, m))
       FatalS(LINE, "sym tab insert failed %s\n", (char*)t->n_str);
     t->sig = g;
     t = t->n_r;
+    ret = mkSym(m, ret);
   }
 
-  return idlist;
+  return ret;
 }
 
 static Node declist(ylist ids, Sig g, Node tail)
@@ -213,6 +218,7 @@ Node yProcPre(char *id, Node params, Node rettype)
   Symbol m;
   Sig g;
 
+  procOffset = 0;
   m = symLookup(Procs, id);
   if (m) {    // not error if forwarded
     g = m->info;
@@ -232,14 +238,19 @@ Node yProcPre(char *id, Node params, Node rettype)
     symInsert(Procs, m);
   }
   tabPush(Vars);
+  // return variable is first if there is one
+  if (rettype) {
+    m = symMake(symStr(id), rettype->n_sym->info);
+    m->location = procOffset++;
+    symInsert(Vars, m);
+  }
   // add parameters to var symtable
   t = params;
   while (t) {
-    symInsert(Vars, symMake(symStr(t->n_sym->name), t->n_sym->info));
+    m = symMake(symStr(t->n_sym->name), t->n_sym->info);
+    m->location = procOffset++;
+    symInsert(Vars, m);
     t = t->n_r;
-  }
-  if (rettype) {
-    symInsert(Vars, symMake(symStr(id), rettype->n_sym->info));
   }
   tabPush(Types);
   
@@ -248,11 +259,6 @@ Node yProcPre(char *id, Node params, Node rettype)
 
 Node yProcPost(char *name, Node decls, Node stms)
 {
-#ifdef TM
-  // set locations of variables
-  Symbol p = symLookup(Procs, name);
-  p->location = varSetLocation(Vars);
-#endif
   tabPop(Vars);
   tabPop(Types);
 

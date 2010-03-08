@@ -29,6 +29,8 @@ extern Sig Gint, Gbool;
 extern int GlobalAR;
 static char *ReturnArg="";
 
+#define DEBUG 0
+
 typedef enum
 {
     /* RR instructions */
@@ -70,7 +72,6 @@ char *opCodeTab[] = {
     /* RA opcodes */
 };
 
-static int procOffset=0;
 static int dataOffset=1;
 static int localOffset=0;
 static void resetLocals()
@@ -180,26 +181,6 @@ static void cgDecls(FILE *out, Node n)
   }
 }
 
-static int cgFormals(Node n)
-{
-  if (!n) return 0;
-
-  assert(n->oper == O_SYM);
-  printf("cgFormals: %s\n", n->n_sym->name);
-  n->cg_value = procOffset++;
-  return 1 + cgFormals(n->n_r);
-}
-
-static int cgLocals(Node n)
-{
-  if (!n) return 0;
-
-  assert(n->oper == O_VAR);
-  printf("cgLocals: %s\n", n->n_l->n_sym->name);
-  n->cg_value = procOffset++;
-  return 1 + cgLocals(n->n_r);
-}
-
 static void cgArray(FILE *out, Sig g)
 {
   assert(g);
@@ -215,7 +196,9 @@ static void cg(FILE *out, Node n)
 
   switch (n->oper) {
   case O_SEQ:
+    #if DEBUG
     emitComment("SEQ");
+    #endif
     if (n->n_l) {
       cg(out, n->n_l);
     }
@@ -224,27 +207,33 @@ static void cg(FILE *out, Node n)
     }
     break;
   case O_EXP:
+    #if DEBUG
     emitComment("O_EXP");
+    #endif
     cg(out, n->n_r);
     break;
   case O_ID:
+    #if DEBUG
     emitComment("O_ID");
+    #endif
     CompilerError(n->n_loc, "shouldn't have an ID in CG\n");
     break;
   case O_SYM:
+    #if DEBUG
     emitComment("O_SYM");
+    #endif
     { int reg = FP;
       assert(!n->n_r);
-      emitComment("O_SYM");
-      printf("sym %s level %d loc %d\n", n->n_sym->name, n->n_sym->level, n->n_sym->location);
       if (n->n_sym->level == 1)	/* global variable */
 	reg = GP;
-      emit(LD, AC, n->cg_value, reg, n->n_sym->name);
+      emit(LD, AC, n->n_sym->location, reg, n->n_sym->name);
       //fprintf(out, "%s", n->n_sym->name);
     }
     break;
   case O_ARR:
+    #if DEBUG
     emitComment("O_ARR");
+    #endif
     {
       Node u;
       u = n->n_l;
@@ -262,14 +251,18 @@ static void cg(FILE *out, Node n)
     break;
   case O_ILIT:
   case O_BLIT:
+    #if DEBUG
     emitComment("O_I/BLIT");
+    #endif
     assert(!n->n_r);
     emit(LDC, AC, n->n_int, 0, 
 	 n->oper==O_ILIT ? "integer literal" : "boolean literal");
     //fprintf(out, "%dL", n->n_int);
     break;
   case O_SLIT:
+    #if DEBUG
     emitComment("O_SLIT");
+    #endif
     assert(!n->n_r);
     fprintf(out, ".DATA %d\n", strlen(n->n_str));
     fprintf(out, ".SDATA \"%s\"\n", n->n_str);
@@ -277,7 +270,9 @@ static void cg(FILE *out, Node n)
     dataOffset += strlen(n->n_str);
     break;
   case O_PROC:
+    #if DEBUG
     emitComment("O_PROC");
+    #endif
     /*
       proc node n
       n->n_l->n_l :: formal param list (walk the n_r kids)
@@ -287,14 +282,15 @@ static void cg(FILE *out, Node n)
      */
     emitComment("procedure declaration");
     emitComment(n->n_str);
-    procOffset = cgFormals(n->n_l->n_l) + cgLocals(n->n_r->n_l);
     // output body
+    n->cg_loc = outLine;
     cg(out, n->n_r->n_r);
-    n->cg_value = procOffset;
     //fprintf(out,"return %s;}\n", ReturnArg);
     break;
   case O_IF:
+    #if DEBUG
     emitComment("O_IF");
+    #endif
     cg(out, n->n_l);
     int elseJump = emitSkip();
     emitComment("then clause");
@@ -310,7 +306,9 @@ static void cg(FILE *out, Node n)
     }
     break;
   case O_DO:
+    #if DEBUG
     emitComment("O_DO");
+    #endif
     //    fputs("while (", out);
     cg(out, n->n_l);
     //fputs(") {\n", out);
@@ -318,16 +316,17 @@ static void cg(FILE *out, Node n)
     //fputs("}\n", out);
     break;
   case O_FA:
+    #if DEBUG
     emitComment("O_FA");
+    #endif
     //fputs("{ int ", out);
     //cg(out, n->n_l);
-    n->n_l->cg_value = procOffset++;
     //    fputs(";\nfor (", out);
     //cg(out, n->n_l);
     //fputs(" = ", out);
     emitComment("lower bound");
     cg(out, n->n_r->n_l->n_l);
-    int top = emit(ST, AC, n->n_l->cg_value, FP, "'i' <- lb");
+    int top = emit(ST, AC, n->n_l->n_sym->location, FP, "'i' <- lb");
     //fputs("; ", out);
     //cg(out, n->n_l);
     //fputs(" <= ", out);
@@ -342,17 +341,21 @@ static void cg(FILE *out, Node n)
     cg(out, n->n_r->n_r);
     //fputs("}\n}\n", out);
     emitComment("fa loop tail");
-    emit(LD, AC, n->n_l->cg_value, FP, "get 'i'");
+    emit(LD, AC, n->n_l->n_sym->location, FP, "get 'i'");
     emit(LDA, AC, 1, AC, "'i'++");
     emit(LDA, PC, top - outLine - 1, PC, "loop back to top");
     emitBackPatch(jump, JGT, AC, outLine, ZERO, "jump out of fa loop");
     break;
   case O_EXIT:
+    #if DEBUG
     emitComment("O_EXIT");
+    #endif
     //fputs("exit(0);\n", out);
     break;
   case O_WRITE:
+    #if DEBUG
     emitComment("O_WRITE");
+    #endif
     cg(out, n->n_r);
     if (!sigCmp(n->n_r->sig, Gint))
       emit(OUT, AC, AC, AC, "write statment");
@@ -366,23 +369,31 @@ static void cg(FILE *out, Node n)
     emit(IN, AC, AC, AC, 0);
     break;
   case O_BREAK:
+    #if DEBUG
     emitComment("O_BREAK");
+    #endif
     //fputs("break;\n", out);
     break;
   case O_RETURN:
+    #if DEBUG
     emitComment("O_RETURN");
+    #endif
     //fprintf(out, "return ");
     //fprintf(out, "%s;\n", ReturnArg);
     break;
   case O_ASSIGN:
+    #if DEBUG
     emitComment("O_ASSIGN");
+    #endif
     cg(out, n->n_l);
     //fputs(" = ", out);
     cg(out, n->n_r);
     //fputs(";\n", out);
     break;
   case O_UNIOP:
+    #if DEBUG
     emitComment("O_UNIOP");
+    #endif
     if (n->n_binop == B_SUB) {
       //fprintf(out, "( 0 -");
       cg(out, n->n_r);
@@ -397,14 +408,15 @@ static void cg(FILE *out, Node n)
       CompilerError(n->n_loc, "Invalid uniary op: %d\n", n->n_binop);
     break;
   case O_BINOP:
+    #if DEBUG
     emitComment("O_BINOP");
+    #endif
     if (n->n_l->sig == Gbool) {
       CompilerError(n->n_loc, "Boolean short circuit not implemented");
     }
     else {
       // integer binop
       cg(out, n->n_l);
-      n->n_l->cg_value = getLocal(1);
       emit(ST, AC, n->n_l->cg_value, ZERO, "move lhs to temp");
       cg(out, n->n_r);
       emit(LD, AC2, n->n_l->cg_value, ZERO, "move lhs from temp");
@@ -421,17 +433,22 @@ static void cg(FILE *out, Node n)
       case B_DIV:
 	emit(DIV, AC, AC, AC2, "div");
 	break;
+      case B_NEQ:
+	emit(SUB, AC, AC, AC2, "sub");
+	break;
       default:
 	CompilerError(n->n_loc, "invalid integer binop");
       }
     }
     break;
   case O_CALL:
+    #if DEBUG
     emitComment("O_CALL");
+    #endif
     {
       Node p;
       //fputs("P_", out);
-      cg(out, n->n_l);
+      //cg(out, n->n_l);
       //fputc('(', out);
       p = n->n_r;
       if (p) {
@@ -448,10 +465,14 @@ static void cg(FILE *out, Node n)
     break;
   case O_FORWARD:
   case O_TYPE:
+    #if DEBUG
     emitComment("O_DECL");
+    #endif
     break;
   case O_VAR:
+    #if DEBUG
     emitComment("O_VAR");
+    #endif
     break;
   case O_ERR:
     CompilerError(n->n_loc, "invalid node in cg, oper=%d\n", n->oper);
@@ -530,9 +551,13 @@ void cgGen(FILE *out, Node n)
   // preamble
 
   int initJump = emitSkip(1);
+  #if DEBUG
   emitComment("BEGIN builtins");
+  #endif
   emitIntProc();
+  #if DEBUG
   emitComment("END builtins");
+  #endif
   
   if (n->n_l)
     emitComment("local procs");
