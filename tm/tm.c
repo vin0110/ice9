@@ -3,6 +3,8 @@
 /* The TM ("Tiny Machine") computer                           */
 /* Compiler Construction: Principles and Practice             */
 /*                                                            */
+/* v2.7.3  Modified VW Freeh March 9, 2010 		      */
+/*	   Added command line options.			      */
 /* v2.7.2  Modified VW Freeh February 23, 2010 		      */
 /*	   Added OUTC instr.				      */
 /*	   Added .DATA and .SDATA directives.		      */
@@ -33,7 +35,7 @@
 /*                                                            */
 /**************************************************************/
 
-char *versionNumber ="TM version 2.7.2";
+char *versionNumber ="TM version 2.7.3";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1076,7 +1078,7 @@ int clusage(char *name) {
   exit(-1);
 }
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   int file=-1;
   int a;
