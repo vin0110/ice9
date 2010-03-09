@@ -46,13 +46,21 @@ typedef enum
 
 } Inst;
 
+/* set the output */
 void emitFile(FILE *);
+/* skip some instruction locations, return current location
+ * use emitSkip(0) to get the current location */
 int emitSkip(int);
-int emitBackPatch(int, Inst, int, int, int, char *);
+/* insert instruction at current location in instruction memory */
 int emit(Inst, int, int, int, char *);
+/* insert instruction at a specified location in instruction memory */
+int emitBackPatch(int, Inst, int, int, int, char *);
 int emitComment(char *);
+/* output a DATA statement */
 int emitData(int, char *);
+/* output an SDATA statement */
 int emitSData(char *, char *);
+/* get the current size of the data segment */
 int emitDataOffset();
 
 #endif /* EMIT_H */
