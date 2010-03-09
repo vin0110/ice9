@@ -1068,24 +1068,97 @@ int doCommand(void)
 /* E X E C U T I O N   B E G I N S   H E R E */
 /********************************************/
 
+int clusage(char *name) {
+  printf("%s -[abl] <tmfile>\n", name);
+  printf("\t-a|--abort <limit>\tset abort limit (default 20000)\n");
+  printf("\t-b|--batch\t\trun in batch mode\n");
+  printf("\t-l|--list\t\tlist instructions and exit\n");
+  exit(-1);
+}
+
 main(int argc, char *argv[])
 {
+  int file=-1;
+  int a;
+  int batch = 0, list=0;
+
+  for (a = 1; a < argc; a++) {
+    if (!strcmp("-a", argv[a]) || !strcmp("--abort", argv[a])) {
+      if (++a < argc) {
+	abortLimit = atoi(argv[a]);
+	if (abortLimit < 0) {
+	  printf("abort limit must be positive, was %d\n", abortLimit);
+	  exit(-1);
+	}
+      }
+      else
+	clusage(argv[0]);
+    }
+    else if (!strcmp("-b", argv[a]) || !strcmp("--batch", argv[a])) {
+      batch = 1;
+    }
+    else if (!strcmp("-h", argv[a]) || !strcmp("--help", argv[a])) {
+      clusage(argv[0]);
+    }
+    else if (!strcmp("-l", argv[a]) || !strcmp("--list", argv[a])) {
+      list = 1;
+    }
+    else {
+      if (file == -1)
+	file = a;
+      else
+	clusage(argv[0]);
+    }
+  }
+  if (list && batch) {
+    printf("select one of -l and -b\n");
+    usage(argv[0]);
+  }
+    /* guarantee a full clear even if the file load fails */
+    fullClearMachine();
+
+  if (list) {
+    int iloc;
+    
+    readInstructions(argv[file]);
+    for (iloc = 0; iloc < IADDR_SIZE-1; iloc++) {
+      writeInstruction(iloc, NOTRACE);
+      if (iMemTag[iloc] <= 0) break;
+    }
+  }
+  else if (batch) {
+    int stepcnt, stepResult;
+    readInstructions(argv[file]);
+    for (stepcnt=0; stepcnt < abortLimit; stepcnt++) {
+      stepResult = stepTM();
+      if (stepResult == srHALT)
+	break;
+      else if (stepResult != srOKAY) {
+	printf("Abnormal termination\nLast executed cmd: ");
+	writeInstruction(lastpc, TRACE);
+      }
+    }
+    if (stepcnt >= abortLimit) {
+      printf("Abort limit reached\nLast executed cmd: ");
+      writeInstruction(lastpc, TRACE);
+    }
+    printf("Number of instructions executed = %d\n", stepcnt);
+    
+  }
+  else {
     printf("%s (enter h for help)...\n\n", versionNumber);
 
     /* tell the user how much space they have */
     printf("Memory Configuration: Data Addresses: 0-%d  Instruction Addresses: 0-%d\n", DADDR_SIZE-1, IADDR_SIZE-1);
-    printf("Abort Limit: %d\n", DEFAULT_ABORT_LIMIT);
-
-    /* guarantee a full clear even if the file load fails */
-    fullClearMachine();
+    printf("Abort Limit: %d\n", abortLimit);
 
     /* read the program if supplied as an argument */
-    if (argc == 2) readInstructions(argv[1]);
+    if (file != -1) readInstructions(argv[file]);
 
     /* do stuff */
     while (doCommand());
 
     printf("Bye.\n");
-
+  }
     return 0;
 }

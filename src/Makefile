@@ -12,7 +12,7 @@ CGDEF=-DTM
 CFLAGS	= -g -Wall -pedantic -std=c99  $(CGDEF)
 
 LIB	= -lfl
-OBJ	= ice9.yy.o ice9.tab.o util.o list.o symtab.o type.o ast.o yhelp.o $(CG).o
+OBJ	= ice9.yy.o ice9.tab.o util.o list.o symtab.o type.o ast.o yhelp.o $(CG).o emit.o
 
 ice9:	$(OBJ)
 	$(CC) -o $@ $^ $(LIB)
