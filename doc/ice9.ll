@@ -5,7 +5,6 @@ program:  'type' type program
 	| 'proc' proc program
 	| 'var' var program
 	| stms
-	|
 	;
 
 stms:	  stm stms
@@ -20,16 +19,18 @@ stm:	 'if' if
 	| 'return' optexp ';'
 	| 'write' exp ';'
 	| 'writes' exp ';'
-	| exp ';'
-	| id idx ';'
+	| 'id' idx
+	| exp;
 	| ';'
 	;
+
 idx:	  '(' explist ')' termx sexpx expx
 	| index optassign
 	;
 optassign: ':=' exp ';'
 	| termx sexpx expx
 	;
+
 optexp:	  exp
 	|
 	;

@@ -92,7 +92,7 @@ int emitSData(char *s, char *note)
 {
   int r = dataOffset;
   dataOffset += strlen(s);
-  fprintf(TMF, ".SDATA \"%3s\"\t%s\n", s, note);
+  fprintf(TMF, ".SDATA \"%s\"\t%s\n", s, note);
   return r;
 }
 

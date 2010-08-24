@@ -49,6 +49,7 @@ static Node Root = NULL;
 Table Vars, Types, Procs;
 Sig Gint, Gbool, Gstr, Gnil, Gerr;
 int SigPrint = 0;
+int IrPrint = 1;
 
 void yyerror(char *s)
 {
@@ -306,9 +307,9 @@ extern int VerboseLevel;
 int GlobalAR=0;
 
 #ifdef TM
-#define OPTS	"ptgsce:o:vh"
+#define OPTS	"ptgsce2:o:vh"
 #else
-#define OPTS	"ptgsnce:o:vh"
+#define OPTS	"ptgsnce2:o:vh"
 #endif
 static void usage(char *prog)
 {
@@ -325,6 +326,7 @@ static void usage(char *prog)
 	  "\t-n:\tcompile to native code (from C code)\n"
 #endif
 	  "\t-e <n>:\tset error limit to n, 0 ==> infinity (default: 1)\n"
+	  "\t-2:\tprint output from project 2\n"
 	  "\t-o <f>:\tset output filename to f\n"
 	  "\t-v:\tincrease verbose level\n");
   
@@ -354,6 +356,7 @@ int main(int argc, char *argv[])
     case 'n':	native = 1; genCode =1;		break;
 #endif
     case 'g':	SigPrint = treePrint = 1;	break;
+    case '2':   IrPrint = 1;			break;
     case 'o':   outfile = optarg;		break;
     case 'e':	
       ErrorLimit = atoi(optarg);
@@ -366,6 +369,10 @@ int main(int argc, char *argv[])
     default:
       usage(argv[0]);
     }
+  }
+  if (IrPrint && SigPrint) {
+    fprintf(stderr, "cannot have -2 and -g options together\n");
+    usage(argv[0]);
   }
   if (!DoSemantic && genCode) {
     fprintf(stderr, "cannot generate code without semantic analysis\n");

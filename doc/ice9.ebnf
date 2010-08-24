@@ -16,7 +16,7 @@ The start symbol is program.
 
 ########### Begin EBNF ############
 
-program	-> {var|type|forward|proc} stms
+program	-> {var|type|forward|proc} {stms}  # empty file is valid program!
 
 # 3 complex tokens (these are usually handled in the lexer)
 id	-> [A-Za-z][A-Za-z0-9_]*
@@ -28,6 +28,7 @@ stms	-> stm { stm }		# there is at least one stm
 
 stm	-> if | do | fa | 'break' ';' | 'exit' ';'
 	-> 'return' ';'
+	-> lvalue ':=' exp ';'	# assignment statement
 	-> 'write' exp ';' | 'writes' exp ';'
 	-> exp ';'		# any exp is valid
 	-> ';'			# the "empty" statement
@@ -62,7 +63,6 @@ typeid -> id			# This for semantics
 lvalue	-> id | lvalue '[' exp ']'
 
 exp	-> lvalue
-	-> lvalue ':=' exp
 	-> int				# integer literal
 	-> 'true'			# boolean literal
 	-> 'false'			# boolean literal
@@ -233,7 +233,7 @@ declarations.  Forward declarations are only defined for procedures.
 ========================|===============
 - (Unary minus)	?	| right
 ------------------------|---------------
-* /			| left
+* / %			| left
 ------------------------|---------------
 + -			| left
 ------------------------|---------------
@@ -242,9 +242,6 @@ declarations.  Forward declarations are only defined for procedures.
 
 The ? operator does not associate semantically because of a type
 conflict.
-
-The assignment operator does not commute.  It binds less tightly than
-all the above operators.
 
 ##############
 # Conversion #
