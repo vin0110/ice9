@@ -1,1 +1,0 @@
-ply-3.3/ply/lex.py
