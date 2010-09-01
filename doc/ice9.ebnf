@@ -16,7 +16,7 @@ The start symbol is program.
 
 ########### Begin EBNF ############
 
-program	-> {var|type|forward|proc} {stms}  # empty file is valid program!
+program	-> {var|type|forward|proc} { stm }  # empty file is valid program!
 
 # 3 complex tokens (these are usually handled in the lexer)
 id	-> [A-Za-z][A-Za-z0-9_]*
@@ -24,8 +24,7 @@ int	-> [0-9]+		# decimal integer literal
 string  -> "[^"\n]*" 		# double-quoted string: any char but " and \n
 	-> '[^'\n]*'  		# single-quoted string: any char but ' and \n
 
-stms	-> stm { stm }		# there is at least one stm
-
+stms	-> stm { stm }
 stm	-> if | do | fa | 'break' ';' | 'exit' ';'
 	-> 'return' ';'
 	-> lvalue ':=' exp ';'	# assignment statement
@@ -36,9 +35,9 @@ stm	-> if | do | fa | 'break' ';' | 'exit' ';'
 if	-> 'if' exp '->' stms { '[]' exp '->' stms } 'fi'
 	-> 'if' exp '->' stms { '[]' exp '->' stms } '[]' 'else' '->' stms 'fi'
 
-do	-> 'do' exp '->' stms 'od'
+do	-> 'do' exp '->' { stm } 'od'
 
-fa	-> 'fa' id ':=' exp 'to' exp '->' stms 'af'
+fa	-> 'fa' id ':=' exp 'to' exp '->' { stm } 'af'
 
 proc	-> 'proc' id '(' declist ')'
 		{type|var} {stm} 'end'
@@ -47,13 +46,13 @@ proc	-> 'proc' id '(' declist ')'
 
 idlist  -> id { ',' id}
 
-var	-> 'var' varlist
+var	-> 'var' varlist ';'
 varlist  -> idlist ':' typeid { '[' int ']' } { ',' varlist}
 
 forward -> 'forward' id '(' declist ')'
 	-> 'forward' id '(' declist ')' ':' typeid
 
-type	-> 'type' id '=' typeid { '[' int ']' }
+type	-> 'type' id '=' typeid { '[' int ']' } ';'
 
 declist	-> idlist ':' typeid { ',' declist }
 	->			# empty
