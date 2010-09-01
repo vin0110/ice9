@@ -1,0 +1,11 @@
+IF:
+  BINOP(B_NEQ): [T_BOOL(1)]
+    ILIT:1 [T_INT(1)]
+    ILIT:1 [T_INT(1)]
+(then)
+  EXP:
+    BINOP(B_ADD): [T_INT(1)]
+      ILIT:1 [T_INT(1)]
+      ILIT:2 [T_INT(1)]
+(else)
+  nil

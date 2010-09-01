@@ -1,0 +1,7 @@
+IF:
+  BLIT: TRUE [T_BOOL(1)]
+(then)
+  EXP:
+    ILIT:1 [T_INT(1)]
+(else)
+  nil

@@ -1,0 +1,10 @@
+EXP:
+  BINOP(B_SUB): [T_INT(1)]
+    BINOP(B_ADD): [T_INT(1)]
+      ILIT:1 [T_INT(1)]
+      BINOP(B_DIV): [T_INT(1)]
+        BINOP(B_MUL): [T_INT(1)]
+          ILIT:2 [T_INT(1)]
+          ILIT:3 [T_INT(1)]
+        ILIT:4 [T_INT(1)]
+    ILIT:5 [T_INT(1)]
