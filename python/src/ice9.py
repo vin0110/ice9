@@ -57,7 +57,7 @@ Read ice9 source from <file> (if present) or standard input.
       --showast:	show AST after parsing phase (does not stop)
 
   -S, --nocg:		stop after semantic checks (no output on success)
-      --showsym:	show symbol table at end of ecah context (pop)
+      --showsym:	show symbol table at end of each context (pop)
 
   -O, --optimize <n>:	set optimization level (only for CG)
   -o, --output <f>:	send output to file; use - for stdout
@@ -117,7 +117,7 @@ def main():
         elif o == '-P':
             parseonly = True
         elif o == '-T':
-            showast = True
+            parseonly = showast = True
         elif o == '-S':
             nocg = True
         elif o in ('-o', '--output'):
@@ -135,11 +135,6 @@ def main():
         raise CompilerError
     else:
         source = sys.stdin
-
-    if outfile == '-':
-        outstream = sys.stdout
-    else:
-        outsteam = open(outfile, 'w')
 
     if lexonly:
         if parseonly:
@@ -203,18 +198,24 @@ def ice9(source=None,opt_level=0,debug=0,verbose=0,
 
     if parseonly:
         ast = parse(**parse_args)
-        if showast:
+        if showast and ast:
             ast.show(0)
         exit(0)
 
     ast = parse(**parse_args)
     doSemantics(ast, debug, verbose)
 
-    if showast:
+    if showast and ast:
         ast.show(0)
+
+    if outfile == '-':
+        outstream = sys.stdout
+    else:
+        outstream = open(outfile, 'w')
 
     if not nocg:
         codegen(ast, outstream)
+    exit(0)
 
 if __name__ == "__main__":
     try:

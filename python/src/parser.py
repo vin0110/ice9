@@ -22,7 +22,7 @@ from symbol import Sig, ArrSig, ListSig, ProcSig, Symbol
 #########
 # Exceptions
 #########
-from errors import ParseError
+from errors import ParseError, SemanticError
 
 class ParseEOF(Exception):
     pass
@@ -33,6 +33,7 @@ class ParseEOF(Exception):
 LookAhead=None
 Debug = 0
 Verbose = 0
+InLoop = 0
 Lexer = None
 TypeCheck=True
 
@@ -136,7 +137,11 @@ stm:	 'if' if
     elif LookAhead.type in ["BREAK", "EXIT"]:
         e = consume()
         consume("SEMI")
-        if e == "BREAK":
+        if e.type == "BREAK":
+            if TypeCheck:
+                if not InLoop:
+                    raise SemanticError(LookAhead, 
+                                        'break statement outside of loop')
             return Break(LookAhead)
         else:
             return Exit(LookAhead)
@@ -185,23 +190,25 @@ idx:	  '(' explist ')' idx2
     elif LookAhead.type == 'ASSIGN':
         consume()
         e = R_exp()
-        # sym = var.lookup(name)
-        sym = name
-        # sym.check(e)
-        return Assign(LookAhead, Var(LookAhead, name.value), e) # @@@
+        if TypeCheck:
+            sym = Symbols.vars.lookup(name.value)
+        else:
+            sym = Sym(LookAhead, name.value)
+        return Assign(LookAhead, Var(LookAhead, sym), e)
     elif LookAhead.type == 'LBRACK':
-        # sym = var.lookupo(name)
-        # sym.array()
-        # u = sym.under()
-        index = R_index()                         # @@@ must hang index on var
-        return R_idx3(Var(LookAhead, name.value)) # @@@
+        if TypeCheck:
+            sym = Symbols.vars.lookup(name.value)
+        else:
+            sym = Sym(LookAhead, name.value)
+        index = R_index()
+        return R_idx3(Var(LookAhead, sym))
     else:
         # return a var
         if TypeCheck:
             try:
                 sym = Symbols.vars.lookup(name.value)
             except AttributeError:
-                raise ParseError(LookAhead,'variable "%s" not found',
+                raise SemanticError(LookAhead,'variable "%s" not found',
                                  name.value)
             v = Var(LookAhead, sym)
         else:
@@ -301,10 +308,13 @@ def R_do():
 do:	  exp '->' stms 'od'
 	;
     '''
+    global InLoop
     debug(R_do)
     test = R_exp()
     consume('ARROW')
+    InLoop += 1
     body = R_stms()
+    InLoop -= 1
     consume('OD')
     return Do(LookAhead, test, body)
 
@@ -313,20 +323,27 @@ def R_fa():
 fa:	  id ':=' exp 'to' exp '->' stms 'af'
 	;
     '''
+    global InLoop
     debug(R_fa)
     name = consume("ID")
-    if TypeCheck:
-        itervar = Symbol(Symbols.types.level(),None,Sig('int'), name=name.value)
-        Symbols.types.push()
-        Symbols.types.insert(itervar.name, itervar)
-    else:
-        itervar = Sym(LookAhead, name.value)
     consume('ASSIGN')
     start = R_exp()
     consume('TO')
     end = R_exp()
     consume('ARROW')
+    # add itervar AFTER the expressions
+    Symbols.vars.push()
+    if TypeCheck:
+        itervar = Symbol(Symbols.vars.level(),None,Sig('int'), name=name.value)
+        itervar.assignable = False
+        Symbols.vars.insert(itervar.name, itervar)
+    else:
+        itervar = Sym(LookAhead, name.value)
+    InLoop += 1
     body = R_stms() 
+    InLoop -= 1
+    Symbols.vars.pop()
+
     consume('AF')
     return Fa(LookAhead, itervar, start, end, body)
 
@@ -395,6 +412,9 @@ def R_var():
     '''
 var:	  idlist ':' typeid array varx ';'
 	;
+
+    This defines a variable. Puts it in the top-level scope. Error if 
+    name is already defined.
     '''
     debug(R_var)
     il = R_idlist()
@@ -405,10 +425,11 @@ var:	  idlist ':' typeid array varx ';'
         try:
             g = Symbols.types.lookup(t.value)
         except AttributeError:
-            raise ParseError(LookAhead, 'type not found "%s"', t.value)
+            raise SemanticError(LookAhead, 'type not found "%s"', t.value)
         while a:
-            g1 = ArrSig(g)
+            g1 = ArrSig(g, a.kids[0].value)
             g = g1
+            a = a.next
         level = Symbols.vars.level()
         for k in il.kids:
             Symbols.vars.insert(k.value, Symbol(level,None,g,name=k.value))
@@ -481,10 +502,16 @@ type:	  id '=' typeid array
 	;
     '''
     debug(R_type)
-    n = consume("ID")
+    new = consume("ID")
     consume("EQ")
-    n = consume("ID")   # typeid
-    #t = Type(n.value)
+    t = consume("ID")   # typeid
+    if TypeCheck:
+        try:
+            g = Symbols.types.lookup(t.value)
+        except AttributeError:
+            raise SemanticError(LookAhead, 'type not found "%s"', t.value)
+
+        Symbols.types.insert(new.value, g)
     R_array()
     consume("SEMI")
     return Nop(LookAhead)
@@ -546,7 +573,7 @@ expx:	  '=' sexp
 	|
 	;
     '''
-    debug(R_expx)
+    debug(R_expx, str(e), fmt="%s: %s")
     if LookAhead.type in Logical_operators:
         op = consume()
         e1 = R_sexp()
@@ -592,11 +619,12 @@ def R_termx(f):
     '''
 termx:	  '*' term termx
 	| '/' term termx
+	| '%' term termx
 	|
 	;
     '''
     debug(R_termx)
-    if LookAhead.type in ["STAR", "SLASH"]:
+    if LookAhead.type in ["STAR", "SLASH", "MOD"]:
         op = consume()
         f1 = R_term()
         s = Binop(LookAhead, op.value, f, f1)
@@ -640,7 +668,7 @@ factor:   '(' exp ')'
         return Bool(LookAhead, False)
     elif LookAhead.type == "MINUS":
         consume()
-        n = R_exp()
+        n = R_factor()
         return Uniop(LookAhead, '-',n)
     elif LookAhead.type == "QUEST":
         consume()
@@ -666,7 +694,10 @@ factorx:  '(' explist ')'
         return Call(LookAhead, name, n)
     else:
         if TypeCheck:
-            sym = Symbols.vars.lookup(name.value)
+            try:
+                sym = Symbols.vars.lookup(name.value)
+            except AttributeError, e:
+                raise SemanticError(LookAhead, str(e))
             v = Var(LookAhead, sym)
             v.sig = sym.sig
             v.under = R_index()
@@ -687,6 +718,7 @@ index:	  '[' exp ']' index
         a = IdxList(LookAhead, R_exp())
         consume("RBRACK")
         a.next = R_index()
+        return a
     else:
         return None
 

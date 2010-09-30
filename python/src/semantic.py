@@ -57,29 +57,50 @@ def propagateSigs(n):
     elif t == "Int":
         n.sig = SigI
     elif t == "Str":
-        n.sig = SigB
+        n.sig = SigS
     elif t == "Bool":
         n.sig = SigB
     elif t == "Forward":
         pass
     elif t == "If":
         propagateSigs(n.test)
+        if not n.test.sig.check(SigB):
+            raise SemanticError(n.test.token, 
+                                'If test expression must be bool, not %s',
+                                n.test.sig)
         propagateSigs(n.then)
         propagateSigs(n.elze)
         n.sig = SigN
     elif t == "Do":
         propagateSigs(n.test)
+        if not n.test.sig.check(SigB):
+            raise SemanticError(n.test.token, 
+                                'Do test expression must be bool, not %s',
+                                n.test.sig)
         propagateSigs(n.body)
         n.sig = SigN
     elif t == "Fa":
-        propagateSigs(n.var)
-        propagateSigs(n.test)
+        #propagateSigs(n.var)
+        propagateSigs(n.start)
+        if not n.start.sig.check(SigI):
+            raise SemanticError(n.start.token, 
+                                'Fa start expression must be int, not %s',
+                                n.start.sig)
+        propagateSigs(n.end)
+        if not n.end.sig.check(SigI):
+            raise SemanticError(n.end.token, 
+                                'Fa end expression must be int, not %s',
+                                n.end.sig)
         propagateSigs(n.body)
         n.sig = SigN
     elif t == "Exit":
         n.sig = SigN
     elif t == "Write":
         propagateSigs(n.exp)
+        if not n.exp.sig.check(SigI) and not n.exp.sig.check(SigS):
+            raise SemanticError(n.token, \
+                      'write statement requires int or string, not %s', \
+                      n.exp.sig)
         n.sig = SigN
     elif t == "Break":
         n.sig = SigN
@@ -89,11 +110,24 @@ def propagateSigs(n):
     elif t == "Assign":
         propagateSigs(n.var)
         propagateSigs(n.exp)
-        n.sig = SigN
+        if not n.var.sym.assignable:
+            raise SemanticError(n.token, '%s cannot be an l-value', \
+                                    n.var.sym.name)
+        try:
+            if n.var.sig.check(n.exp.sig):
+                n.sig = SigN
+            else:
+                raise SemanticError(n.token, 'cannot assign %s into %s',
+                                    n.exp.sig, n.var.sig)
+        except AttributeError:
+            raise SemanticError(n.token, 'invalid assignment')
     elif t == "Binop":
         propagateSigs(n.left)
         propagateSigs(n.right)
-        n.sig = checkBinop(n.op, n.left.sig, n.right.sig)
+        try:
+            n.sig = checkBinop(n.op, n.left.sig, n.right.sig)
+        except ValueError, e:
+            raise SemanticError(n.token, str(e))
     elif t == "Uniop":
         propagateSigs(n.exp)
         sig = n.exp.sig
@@ -102,12 +136,9 @@ def propagateSigs(n):
         elif n.op == '?' and sig.check(SigB):
             n.sig = SigI
         else:
-            raise ValueError('invalid type of uniop ' + n.op)
+            raise SemanticError(n.token, 'invalid type of uniop ' + n.op)
     elif t == "Call":
         propagateSigs(n.args)
-        if n.returns:
-            propagateSigs(n.returns)
-            n.sig = n.returns.sig
     elif t == "Var":
         n.sig = n.sym.sig
     elif t == "Sym":
@@ -117,7 +148,7 @@ def propagateSigs(n):
     elif t == "Nop":
         n.sig = SigN
     else:
-        raise ValueError("propogateSigs: invalid type %s", t)
+        raise SemanticError(n.token, "propogateSigs: invalid type %s", t)
 
 def checkBinop(op, l, r):
     if op in ['*', '+']:
@@ -138,7 +169,7 @@ def checkBinop(op, l, r):
             return l
     else:
         raise ValueError('invalid binop ' + op)
-    raise ValueError('invalid types for binop ' + n.op)
+    raise ValueError('invalid types for binop ' + op)
 
 def doSemantics(ast, debug, verbose):
     global Debug, Verbose

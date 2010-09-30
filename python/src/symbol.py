@@ -23,14 +23,20 @@ CSC 512
 # symbols
 #########
 class Symbol(object):
+    '''
+    symbol can be a variable for a procedure.
+
+    location for variable is stack offset, for proc it is instruction pointer
+    '''
     def __init__(self, level, location, sig, name='undef'):
         self.name = name        # just for printing; real name is table
         self.level = level
         self.location = location
         self.sig = sig
+        self.assignable = True
         
     def __str__(self):
-        return "Sym(%s, %d) %s" % (self.name, self.level, self.sig,)
+        return "Sym(%s, %d): %s" % (self.name, self.level, self.sig,)
 
 class Table(object):
     def __init__(self, name):
@@ -65,7 +71,7 @@ class Table(object):
             for i in range(1,len(self.tab)):
                 if self.tab[i].has_key(name):
                     return self.tab[i][name]
-            raise AttributeError(self.__str__() + ': global name "' +\
+            raise AttributeError(self.__str__() + ': name "' +\
                                      name + '" not found')
 
     def show(self):
@@ -87,26 +93,35 @@ class Sig(object):
         self.type = typ
 
     def __str__(self):
+        return '%s' % (self.type,)
+
+    def show(self):
         return 'Sig(%s)' % (self.type,)
 
     def check(self, sig):
-        if self.type == sig.type:
-            return True
+        try:
+            if self.type == sig.type:
+                return True
+        except AttributeError:
+            pass
         return False
 
 class ArrSig(Sig):
-    def __init__(self, under):
+    def __init__(self, under, size):
         self.type = 'ArrSig'
         self.under = under
+        self.size = size
 
     def __str__(self):
-        s = '[]'
+        s = '[%s]' % self.size
         u = self.under
         while u.type == ArrSig:
-            s += '[]'
+            s += '[%d]' % u.size
+            u = u.under
         return u.__str__() + s
 
     def check(self, sig):
+        print 'arrsig check', self.type, self.under, self.size
         if self.type == sig.type:
             try:
                 return self.under.check(sig.under)
@@ -160,6 +175,7 @@ class Symbols(object):
         self.vars = v
         p = Table('procs')
         self.procs = p
+        p.insert('int', None) # @@@ not correct
         t = Table('types')
         self.types = t
         t.insert('int',Sig('int'))

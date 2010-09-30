@@ -1,0 +1,14 @@
+# mutual recursion										succeed
+
+forward a (p : int)
+
+proc b (p : int)
+	a(p);
+end
+
+proc a (p : int)
+	b(p);
+end
+
+b(0);
+a(0);

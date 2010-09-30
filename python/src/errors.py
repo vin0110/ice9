@@ -23,9 +23,16 @@ class ParseError(CompilerError):
     def __str__(self):
         return 'ParseError: line %d: ' % (self.la.lineno) \
             + self.fmt % tuple(self.args)
-    pass
 
 
 class SemanticError(CompilerError):
-    pass
+    def __init__(self, tok, fmt, *args):
+        Exception.__init__(self, *args)
+        self.tok = tok
+        self.fmt = fmt
+        self.args = args
+
+    def __str__(self):
+        return 'SemanticError: line %d: ' % (self.tok.lineno) \
+            + self.fmt % tuple(self.args)
 

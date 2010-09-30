@@ -13,11 +13,15 @@ def indent(i):
 class Node(object):
     '''
     Base tree class
+    
+    the register field is used in register allocation. It is non-null only for
+    scalar values stored in registers.
     '''
     def __init__(self, tok, name='Node', sig=None):
         self.type = name
         self.sig = sig
         self.token = tok
+        self.register = None
     def __str__(self):
         return self.type
     def show(self, level=0):
@@ -123,6 +127,11 @@ class Program(Node):
 #########
 # literals
 #########
+from symbol import Sig
+IntSig = Sig('int')
+BoolSig = Sig('bool')
+StringSig = Sig('string')
+
 class Int(Node):
     '''
     Integer literal
@@ -130,6 +139,7 @@ class Int(Node):
     def __init__(self, tok, value, **kwargs):
         super(Int,self).__init__(tok, 'Int',**kwargs)
         self.value = value
+        self.sig = IntSig
     def show(self, level=0):
         s = "%s%s(%d)" % (indent(level), self.type, self.value)
         if self.sig:
@@ -143,6 +153,7 @@ class Str(Node):
     def __init__(self, tok, value, **kwargs):
         super(Str,self).__init__(tok, 'Str',**kwargs)
         self.value = value
+        self.sig = StringSig
     def show(self, level=0):
         s = "%s%s(%s)" % (indent(level), self.type, self.value)
         if self.sig:
@@ -156,6 +167,7 @@ class Bool(Node):
     def __init__(self, tok, value, **kwargs):
         super(Bool,self).__init__(tok, 'Bool',**kwargs)
         self.value = value
+        self.sig = BoolSig
     def show(self, level=0):
         s = "%s%s(%s)" % (indent(level), self.type, str(self.value))
         if self.sig:
@@ -255,7 +267,7 @@ class Fa(Node):
             s += ': ' + self.sig.__str__()
         print s
         level += 1
-        self.var.show(level)
+        print indent(level) + str(self.var)
         self.start.show(level)
         self.end.show(level)
         self.body.show(level)
@@ -338,7 +350,7 @@ class Var(Node):
         self.sym = sym
         self.under = None
     def show(self, level=0):
-        s = "%s%s(%s)" % (indent(level), self.type, self.sym.name)
+        s = "%s%s" % (indent(level), self.type)
         if self.sig:
             s += ': ' + self.sig.__str__()
         print s
@@ -376,6 +388,7 @@ class Call(Node):
 class Read(Node):
     def __init__(self, tok, **kwargs):
         super(Read,self).__init__(tok,'Read',**kwargs)
+        self.sig = IntSig
 
 class Nop(Node):
     def __init__(self, tok, **kwargs):
