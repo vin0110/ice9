@@ -113,12 +113,27 @@ def propagateSigs(n):
         if not n.var.sym.assignable:
             raise SemanticError(n.token, '%s cannot be an l-value', \
                                     n.var.sym.name)
+        sig = n.var.sig
+        for idx in n.var.under.kids:
+            try:
+                sig = sig.under
+            except AttributeError:
+                raise SemanticError(idx.token, 'invalid array index')
+            if not idx.sig.check(SigI):
+                raise SemanticError(idx.token, 
+                                    'array index must be int, not %s',
+                                    idx.sig)
         try:
-            if n.var.sig.check(n.exp.sig):
+            sig.under
+            raise SemanticError(n.token, 'cannot assign into an array')
+        except AttributeError:
+            pass
+        try:
+            if sig.check(n.exp.sig):
                 n.sig = SigN
             else:
-                raise SemanticError(n.token, 'cannot assign %s into %s',
-                                    n.exp.sig, n.var.sig)
+                raise SemanticError(n.token, 'type mismatch %s != %s',
+                                    sig, n.exp.sig)
         except AttributeError:
             raise SemanticError(n.token, 'invalid assignment')
     elif t == "Binop":
@@ -140,7 +155,12 @@ def propagateSigs(n):
     elif t == "Call":
         propagateSigs(n.args)
     elif t == "Var":
-        n.sig = n.sym.sig
+        sig = n.sym.sig
+        if n.under:
+            for k in n.under.kids:
+                propagateSigs(k)
+                sig = sig.under
+        n.sig = sig
     elif t == "Sym":
         pass
     elif t == "Read":

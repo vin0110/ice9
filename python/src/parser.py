@@ -200,8 +200,9 @@ idx:	  '(' explist ')' idx2
             sym = Symbols.vars.lookup(name.value)
         else:
             sym = Sym(LookAhead, name.value)
-        index = R_index()
-        return R_idx3(Var(LookAhead, sym))
+        var = Var(LookAhead, sym)
+        var.under = R_index(None)
+        return R_idx3(var)
     else:
         # return a var
         if TypeCheck:
@@ -505,14 +506,22 @@ type:	  id '=' typeid array
     new = consume("ID")
     consume("EQ")
     t = consume("ID")   # typeid
+    a = R_array()
     if TypeCheck:
         try:
             g = Symbols.types.lookup(t.value)
         except AttributeError:
             raise SemanticError(LookAhead, 'type not found "%s"', t.value)
-
-        Symbols.types.insert(new.value, g)
-    R_array()
+        try:
+            g = Symbols.types.lookup(new.value)
+            raise SemanticError(LookAhead, 'type clash; "%s" already defined', 
+                                new.value)
+        except AttributeError:
+            while a:
+                g1 = ArrSig(g, a.kids[0].value)
+                g = g1
+                a = a.next
+            Symbols.types.insert(new.value, g)
     consume("SEMI")
     return Nop(LookAhead)
 
@@ -700,13 +709,12 @@ factorx:  '(' explist ')'
                 raise SemanticError(LookAhead, str(e))
             v = Var(LookAhead, sym)
             v.sig = sym.sig
-            v.under = R_index()
         else:
             v = Var(LookAhead, Sym(LookAhead, name.value))
-            R_index()
+        v.under = R_index(None)
         return v
 
-def R_index():
+def R_index(idxlist):
     '''
 index:	  '[' exp ']' index
 	|
@@ -715,12 +723,14 @@ index:	  '[' exp ']' index
     debug(R_index)
     if LookAhead.type == "LBRACK":
         consume()
-        a = IdxList(LookAhead, R_exp())
+        if idxlist:
+            idxlist.append(R_exp())
+        else:
+            idxlist = IdxList(LookAhead, R_exp())
         consume("RBRACK")
-        a.next = R_index()
-        return a
+        return R_index(idxlist)
     else:
-        return None
+        return idxlist
 
 def R_explist():
     '''
