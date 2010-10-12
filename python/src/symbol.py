@@ -121,7 +121,6 @@ class ArrSig(Sig):
         return u.__str__() + s
 
     def check(self, sig):
-        print 'arrsig check', self.type, self.under, self.size
         if self.type == sig.type:
             try:
                 return self.under.check(sig.under)
@@ -132,7 +131,10 @@ class ArrSig(Sig):
 class ListSig(Sig):
     def __init__(self, this):
         self.type = 'ListSig'
-        self.kids = [this]
+        if this:
+            self.kids = [this]
+        else:
+            self.kids = []
 
     def __str__(self):
         return '[' + ','.join([k.__str__() for k in self.kids]) + ']'
@@ -171,11 +173,20 @@ class ProcSig(Sig):
 #########
 class Symbols(object):
     def __init__(self):
+        # init vars
         v = Table('vars')
         self.vars = v
+
+        # init procs
         p = Table('procs')
         self.procs = p
-        p.insert('int', None) # @@@ not correct
+        p.insert('int', Symbol(p.level(),
+                               None, # @@@ need to set location for CG
+                               ProcSig(ListSig(Sig('str')),Sig('int')),
+                               name='int'))
+        p.push()
+
+        # init types
         t = Table('types')
         self.types = t
         t.insert('int',Sig('int'))

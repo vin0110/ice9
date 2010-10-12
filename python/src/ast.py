@@ -105,6 +105,13 @@ class IdxList(Seq):
     def __init__(self, tok, left, **kwargs):
         super(IdxList,self).__init__(tok, 'Idx', left, **kwargs)
 
+class ProcList(Seq):
+    '''
+    List of procs
+    '''
+    def __init__(self, tok, left, **kwargs):
+        super(ProcList,self).__init__(tok, 'Proc', left, **kwargs)
+
 #########
 # program
 #########
@@ -186,7 +193,7 @@ class Proc(Node):
     body	: stmList
     '''
     def __init__(self, tok, name, returns, params, body, **kwargs):
-        super(Proc,self).__init__(tok, 'Id',**kwargs)
+        super(Proc,self).__init__(tok, 'Proc',**kwargs)
         self.name = name
         self.returns = returns
         self.params = params
@@ -199,7 +206,10 @@ class Proc(Node):
             s += ': ' + self.sig.__str__()
         print s
         level += 1
-        self.params.show(level)
+        if self.params:
+            self.params.show(level)
+        else:
+            print '%s[]' % (indent(level))
         if self.body:           # forward has no body
             self.body.show(level)
 
@@ -350,12 +360,17 @@ class Var(Node):
         self.sym = sym
         self.under = None
     def show(self, level=0):
-        s = "%s%s" % (indent(level), self.type)
+        s = "%s%s(%s)" % (indent(level), self.type, self.sym.name)
         if self.sig:
             s += ': ' + self.sig.__str__()
         print s
         if self.under:
             self.under.show(level+1)
+    def __str__(self):
+        try:
+            return "%s(%s)" %(self.type, self.sym.name,)
+        except AttributeError:
+            return super(Var,self).__str__()
 
 class Sym(Node):
     '''

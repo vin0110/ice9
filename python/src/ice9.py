@@ -107,9 +107,9 @@ def main():
         elif o == '--parseonly':
             parseonly = True
         elif o == '--showast':
-            showsym = True
-        elif o == '--showsym':
             showast = True
+        elif o == '--showsym':
+            showsym = True
         elif o == '--nocg':
             nocg = True
         elif o == '-L':

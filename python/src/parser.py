@@ -9,7 +9,7 @@ VW Freeh copyright 2010
 #########
 import sys
 from ast import Seq, StmList, ExpList, TypeList, IdxList, VarList, \
-    Program, DecList,\
+    Program, DecList, ProcList, \
     Int, Str, Bool, Proc, Forward, \
     If, Do, Fa, Exit, Write, Break, Return, Assign, \
     Binop, Uniop, Call, Var, Sym, Read, Nop
@@ -49,7 +49,7 @@ FirstStm = FirstStm_ + FirstExp
 # Grammar rules
 #########
 
-def R_program():
+def R_program(L):
     '''
 program:  'type' type program
 	| 'forward' forward program
@@ -60,28 +60,29 @@ program:  'type' type program
         '''
 
     debug(R_program)
-    stms = None
     if LookAhead.type == 'TYPE':
         consume()
         R_type()
-        return R_program()
+        return R_program(L)
     elif LookAhead.type == 'FORWARD':
         consume()
         R_forward()
-        return R_program()
+        return R_program(L)
     elif LookAhead.type == 'PROC':
         consume()
-        R_proc()
-        return R_program()
+        proc = R_proc()
+        L.append(proc)
+        return R_program(L)
     elif LookAhead.type == 'VAR':
         consume()
         R_var()
-        return R_program()
+        return R_program(L)
     else:
         stms = R_ostms()
         if LookAhead.type is not "EOF":
             raise ParseError(LookAhead, 'syntax error near %s', LookAhead.type)
-        return stms
+        L.append(stms)
+        return L
 
 def R_ostms():
     '''
@@ -169,6 +170,21 @@ stm:	 'if' if
         consume("SEMI")
         return Nop(LookAhead)
 
+def mkcaller(name, args):
+    if TypeCheck:
+        try:
+            sym = Symbols.procs.lookup(name.value)
+        except AttributeError:
+            raise SemanticError(LookAhead, 'proc "%s" not found', name.value)
+        # do not check param types here; check in semantics.py
+        sig = sym.sig.returns
+    else:
+        sym = name.value
+        sig = None
+    c = Call(LookAhead, sym, args)
+    c.sig = sig
+    return c
+
 def R_idx(name):
     '''
 idx:	  '(' explist ')' idx2
@@ -180,27 +196,24 @@ idx:	  '(' explist ')' idx2
     debug(R_idx)
     if LookAhead.type == 'LPAREN':
         consume()
-        #sym = proc.lookup(name)
-        sym = name.value
         args = R_explist()
-        #sym.check(args)
-        c = Call(LookAhead, sym, args)
+        c = mkcaller(name, args)
         consume("RPAREN")
         return R_idx2(c)
     elif LookAhead.type == 'ASSIGN':
         consume()
         e = R_exp()
         if TypeCheck:
-            sym = Symbols.vars.lookup(name.value)
+            var = Symbols.vars.lookup(name.value)
         else:
-            sym = Sym(LookAhead, name.value)
-        return Assign(LookAhead, Var(LookAhead, sym), e)
+            var = Var(LookAhead, Sym(LookAhead, name.value))
+        return Assign(LookAhead, var, e)
     elif LookAhead.type == 'LBRACK':
         if TypeCheck:
-            sym = Symbols.vars.lookup(name.value)
+            var = Symbols.vars.lookup(name.value)
         else:
             sym = Sym(LookAhead, name.value)
-        var = Var(LookAhead, sym)
+            var = Var(LookAhead, sym)
         var.under = R_index(None)
         return R_idx3(var)
     else:
@@ -354,13 +367,65 @@ proc:	 id '(' declist ')' returns body 'end'
 	;
     '''
     debug(R_proc)
+
+    # consume declaration (name, params, return type)
     fname = consume("ID")
     consume('LPAREN')
-    R_declist()
+    params = R_declist()
     consume('RPAREN')
-    R_returns()
-    R_body()
+    returns = R_returns()
+
+    # do some semantic stuff
+    Symbols.types.push()
+    Symbols.vars.push()
+    if TypeCheck:
+        # lookup fname in outermost scope
+        try:
+            Symbols.procs.lookup(fname.value, local=True)
+            raise SemanticError(LookAhead, 
+                                'name clash; proc "%s" already defined', 
+                                fname.value)
+        except AttributeError:
+            # name is not used
+            pass
+
+        params_sig = ListSig(None)
+        if params:
+            for p in params.kids:
+                params_sig.append(p.sig)
+                try:
+                    Symbols.vars.lookup(p.value, local=True)
+                    raise SemanticError(LookAhead, 
+                                        'redfinition of formal argument "%s"',
+                                        p.value)
+                except AttributeError:
+                    pass
+                psym = Symbol(Symbols.vars.level(),None,p.sig, name=p.value)
+                Symbols.vars.insert(p.value, psym)
+
+        if returns:
+            returns_sig = returns.sig
+        else:
+            returns_sig = None
+        sym = Symbol(Symbols.procs.level(), 
+                     None,
+                     ProcSig(params_sig, returns_sig),
+                     name=fname.value)
+        Symbols.procs.insert(fname.value, sym)
+        #Symbols.procs.show()
+    else:
+        # create dummy symbol
+        sym = Symbol(1, None, None)
+
+    # comsume body
+    sym.body = R_body()
+    
+    # cleanup
+    Symbols.vars.pop()
+    Symbols.types.pop()
     consume('END')
+
+    return Proc(fname, fname.value, returns, params, sym.body)
 
 def R_returns():
     '''
@@ -387,13 +452,13 @@ body:	  'type' type body
     if LookAhead.type == "TYPE":
         consume()
         R_type()
-        R_body()
+        return R_body()
     elif LookAhead.type == "VAR":
         consume()
         R_var()
-        R_body()
+        return R_body()
     elif LookAhead.type in FirstStm:
-        R_stms()
+        return R_stms()
     else:
         pass
 
@@ -428,15 +493,21 @@ var:	  idlist ':' typeid array varx ';'
         except AttributeError:
             raise SemanticError(LookAhead, 'type not found "%s"', t.value)
         while a:
+            if a.kids[0].value < 1:
+                raise SemanticError(LookAhead, \
+                          'cannot define variable with non-positive array size')
             g1 = ArrSig(g, a.kids[0].value)
             g = g1
             a = a.next
         level = Symbols.vars.level()
         for k in il.kids:
-            Symbols.vars.insert(k.value, Symbol(level,None,g,name=k.value))
-    consume("SEMI")
-    return R_varx()
-
+            k.sym = Symbol(level, None, g, name=k.sym.name)
+            Symbols.vars.insert(k.sym.name, k)
+    if LookAhead.type == "COMMA":
+        consume()
+        R_var()
+    else:
+        consume("SEMI")
 
 def R_varx():
     '''
@@ -478,7 +549,7 @@ idlist:	  id idlistx
     '''
     debug(R_idlist)
     name = consume("ID")
-    s = (VarList(LookAhead, name))
+    s = VarList(LookAhead, Var(LookAhead,Sym(LookAhead,name.value)))
     return R_idlistx(s)
 
 def R_idlistx(s):
@@ -491,8 +562,11 @@ idlistx:  ',' id idlistx
     if LookAhead.type == "COMMA":
         consume()
         name = consume("ID")
+        v = Var(LookAhead, Sym(LookAhead,name.value))
         if s:
-            s.join(VarList(LookAhead, name))
+            s.append(v)
+        else:
+            s = VarList(LookAhead, v)
         return R_idlistx(s)
     else:
         return s
@@ -508,22 +582,43 @@ type:	  id '=' typeid array
     t = consume("ID")   # typeid
     a = R_array()
     if TypeCheck:
+        # lookup rhs type
         try:
             g = Symbols.types.lookup(t.value)
         except AttributeError:
             raise SemanticError(LookAhead, 'type not found "%s"', t.value)
+        # see if lhs type is already defined
         try:
-            g = Symbols.types.lookup(new.value)
+            g = Symbols.types.lookup(new.value, local=True)
             raise SemanticError(LookAhead, 'type clash; "%s" already defined', 
                                 new.value)
         except AttributeError:
             while a:
+                if a.kids[0].value < 1:
+                    raise SemanticError(LookAhead, \
+                             'cannot define type with non-positive array size')
                 g1 = ArrSig(g, a.kids[0].value)
                 g = g1
                 a = a.next
             Symbols.types.insert(new.value, g)
     consume("SEMI")
     return Nop(LookAhead)
+
+def declister():
+    il = R_idlist()
+    consume('COLON')
+    n = consume("ID")   # typeid
+    if TypeCheck:
+        try:
+            g = Symbols.types.lookup(n.value)
+        except AttributeError:
+            raise SemanticError(LookAhead, 'type not found "%s"', n.value)
+    else:
+        g = None
+    il.type = "Dec" # change idlist into dec list
+    for param in il.kids:
+        param.sig = g
+    return il
 
 def R_declist():
     '''
@@ -533,10 +628,13 @@ declist:  idlist ':' typeid declistx
     '''
     debug(R_declist)
     if LookAhead.type == "ID":
-        il = R_idlist()
-        consume('COLON')
-        n = consume("ID")   # typeid
-        R_declistx(None)
+        il = declister()
+        extra = R_declistx(None)
+        if extra:
+            for d in extra.kids:
+                il.append(d)
+        return il
+    return None
 
 def R_declistx(dl):
     '''
@@ -547,14 +645,12 @@ declistx: ',' idlist ':' typeid declistx
     debug(R_declistx)
     if LookAhead.type == "COMMA":
         consume()
-        il = R_idlist()
-        consume('COLON')
-        t = consume("ID")   # typeid
-        n = DecList(LookAhead, il)     # @@@ symbol lookup
+        il = declister()
         if dl:
-            dl.join(n)
+            for i in il.kids:
+                dl.append(i)
         else:
-            n = dl
+            dl = il
         return R_declistx(dl)
     else:
         return dl
@@ -582,7 +678,7 @@ expx:	  '=' sexp
 	|
 	;
     '''
-    debug(R_expx, str(e), fmt="%s: %s")
+    #debug(R_expx, str(e), fmt="%s: %s")
     if LookAhead.type in Logical_operators:
         op = consume()
         e1 = R_sexp()
@@ -698,16 +794,17 @@ factorx:  '(' explist ')'
     debug(R_factorx, name, fmt="%s: %s")
     if LookAhead.type == "LPAREN":
         consume()
-        n = R_explist()
+        args = R_explist()
         consume("RPAREN")
-        return Call(LookAhead, name, n)
+        c = mkcaller(name, args)
+        return c
     else:
         if TypeCheck:
             try:
                 sym = Symbols.vars.lookup(name.value)
             except AttributeError, e:
                 raise SemanticError(LookAhead, str(e))
-            v = Var(LookAhead, sym)
+            v = sym
             v.sig = sym.sig
         else:
             v = Var(LookAhead, Sym(LookAhead, name.value))
@@ -808,7 +905,7 @@ def parse(lexer=None, debug=0, verbose=0, source=sys.stdin, nosemantics=False,
 
     # set LookAhead
     consume()
-    return R_program()
+    return R_program(Seq(LookAhead,None,None))
 
 if __name__ == "__main__":
     pass

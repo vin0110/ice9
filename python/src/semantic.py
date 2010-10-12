@@ -20,7 +20,7 @@ from ast import Seq, StmList, ExpList, TypeList, IdxList, VarList, \
     If, Do, Fa, Exit, Write, Break, Return, Assign, \
     Binop, Uniop, Call, Var, Sym, Read, Nop
 
-from symbol import Sig
+from symbol import Sig, ListSig
 
 #########
 # Globals
@@ -39,12 +39,17 @@ def propagateSigs(n):
     if n is None:
         return
     t = n.type
-    if t in ["Seq", "SeqStm", "SeqExp", "IdxList", "SeqVar", \
+    if t in ["Seq", "SeqStm", "IdxList", "SeqVar", \
                  "SeqType", "SeqDec"]:
         # @@@ should this be done for Type, Dec?
         for k in n.kids:
             propagateSigs(k)
         n.sig = SigN
+    elif t == "SeqExp":
+        n.sig = ListSig(None)
+        for k in n.kids:
+            propagateSigs(k)
+            n.sig.append(k.sig)
     elif t == "Program":
         ProgagateSigs(n.body)
         n.sig = SigN
@@ -113,6 +118,8 @@ def propagateSigs(n):
         if not n.var.sym.assignable:
             raise SemanticError(n.token, '%s cannot be an l-value', \
                                     n.var.sym.name)
+
+        '''
         sig = n.var.sig
         for idx in n.var.under.kids:
             try:
@@ -136,7 +143,23 @@ def propagateSigs(n):
                                     sig, n.exp.sig)
         except AttributeError:
             raise SemanticError(n.token, 'invalid assignment')
+        '''
+        try:
+            if not n.var.sig.check(n.exp.sig):
+                raise SemanticError(n.token, 'type mismatch %s != %s',
+                                    n.var.sig, n.exp.sig)
+        except AttributeError:
+            raise SemanticError(n.token, 'invalid assignment')
+        
+        try:
+            n.var.sig.under
+            raise SemanticError(n.token, 'cannot assign arrays')
+        except AttributeError:
+            pass
+        n.sig = None
+
     elif t == "Binop":
+        print 'bo', n.left
         propagateSigs(n.left)
         propagateSigs(n.right)
         try:
@@ -154,11 +177,28 @@ def propagateSigs(n):
             raise SemanticError(n.token, 'invalid type of uniop ' + n.op)
     elif t == "Call":
         propagateSigs(n.args)
+        # compare param types
+        try:
+            if n.sym.sig.params.check(n.args.sig):
+                pass
+            else:
+                raise SemanticError(n.token, 
+                                    'param mismatch in proc call for "%s"',
+                                    n.sym.name)
+        except AttributeError:
+            raise SemanticError(n.token, 'invalid param list')
     elif t == "Var":
         sig = n.sym.sig
         if n.under:
             for k in n.under.kids:
                 propagateSigs(k)
+                try:
+                    if not k.sig.check(SigI):
+                        raise SemanticError(n.token, 
+                                            "array index expression is not an int: %s", k.sig)
+                except AttributeError:
+                    raise SemanticError(n.token, 
+                                        "invalid array index expression")
                 sig = sig.under
         n.sig = sig
     elif t == "Sym":
