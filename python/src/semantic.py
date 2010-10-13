@@ -177,8 +177,12 @@ def propagateSigs(n):
     elif t == "Call":
         propagateSigs(n.args)
         # compare param types
+        if not n.args:
+            args_sig = ListSig(None)
+        else:
+            args_sig = n.args.sig
         try:
-            if n.sym.sig.params.check(n.args.sig):
+            if n.sym.sig.params.check(args_sig):
                 pass
             else:
                 raise SemanticError(n.token, 

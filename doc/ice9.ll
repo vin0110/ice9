@@ -122,8 +122,8 @@ factor:   '(' exp ')'
 	| int
 	| string
 	| 'read'
-	| '-' exp
-	| '?' exp
+	| '-' factor
+	| '?' factor
 	| id factorx
 	;
 factorx:  '(' explist ')'

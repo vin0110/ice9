@@ -224,11 +224,10 @@ idx:	  '(' explist ')' idx2
         # return a var
         if TypeCheck:
             try:
-                sym = Symbols.vars.lookup(name.value)
+                v = Symbols.vars.lookup(name.value)
             except AttributeError:
                 raise SemanticError(LookAhead,'variable "%s" not found',
                                  name.value)
-            v = Var(LookAhead, sym)
         else:
             v = Var(LookAhead, Sym(LookAhead, name.value))
         return R_idx2(v)
@@ -412,10 +411,10 @@ proc:	 id '(' declist ')' returns body 'end'
             for p in params.kids:
                 params_sig.append(p.sig)
                 try:
-                    Symbols.vars.lookup(p.value, local=True)
+                    Symbols.vars.lookup(p.sym.name, local=True)
                     raise SemanticError(LookAhead, 
                                         'redfinition of formal argument "%s"',
-                                        p.value)
+                                        p.sym.name)
                 except AttributeError:
                     pass
                 psym = Symbol(Symbols.vars.level(),None,p.sig, name=p.sym.name)
@@ -807,8 +806,8 @@ factor:   '(' exp ')'
 	| int
 	| string
 	| 'read'
-	| '-' exp
-	| '?' exp
+	| '-' factor
+	| '?' factor
         | 'true'
         | 'false'
 	| id factorx
@@ -841,7 +840,7 @@ factor:   '(' exp ')'
         return Uniop(LookAhead, '-',n)
     elif LookAhead.type == "QUEST":
         consume()
-        n = R_exp()
+        n = R_factor()
         return Uniop(LookAhead, '?',n)
     elif LookAhead.type == "ID":
         i = consume()
