@@ -183,10 +183,11 @@ line (determined by the newline character).
 
 There are three symbol tables in ice9.  One each for types, variables,
 and procedures.  Initially, the types symbol table consists of three
-entries: 'int', 'bool', and 'str' which resolve to the three basic types.
-The procedure table is initially loaded with 'int' the built operation.
-The variables table is empty.  These entries are in the default scope.
-They can be masked by a like definition in another scope.
+entries: 'int', 'bool', and 'string' which resolve to the three basic
+types.  The procedure table is initially loaded with 'int' the built
+operation.  The variables table is empty.  These entries are in the
+default scope.  They can be masked by a like definition in another
+scope.
 
 
 #################
@@ -221,7 +222,7 @@ declarations.  Forward declarations are only defined for procedures.
 <  : int x int -> bool		  // comparison, less than
 >= : int x int -> bool		  // comparison, greater than or equal to
 <= : int x int -> bool		  // comparison, less than or equal to
-:= : T x T -> nil, T={int,bool,str} // assignment
+:= : T x T -> nil, T={int,bool,string} // assignment
 
 ################################
 # Precedence and associativity #
@@ -260,7 +261,7 @@ a bool:
 The built-in function int() converts a string to an integer.  In the
 following code, both write statements output '5'.
 
-	var a: str
+	var a: string
 	var b: int
 	a := "5";
 	b := int(a);

@@ -1,0 +1,16 @@
+#! /bin/bash
+
+for num in `seq 1 169`; do
+	echo $num
+#	tr -d '\15' < tests/test$num.9 > unix-tests/test$num.9
+	./ice9 < tests/test$num.9 > out/test$num.out 2>&1
+	diff out/test$num.out expected/test$num.out
+	
+done
+
+for num in `seq 219 256`; do
+	echo $num
+#	tr -d '\15' < tests/test$num.9 > unix-tests/test$num.9
+	./ice9 < tests/test$num.9 > out/test$num.out 2>&1
+	diff out/test$num.out expected/test$num.out
+done

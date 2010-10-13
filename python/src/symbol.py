@@ -85,6 +85,12 @@ class Table(object):
             for k in keys:
                 print '   ', k, ':', t[i][k]
 
+    def items(self):
+        I = []
+        for t in self.tab:
+            I += t.items()
+        return I
+
 #########
 # Type signatures
 #########
@@ -180,10 +186,11 @@ class Symbols(object):
         # init procs
         p = Table('procs')
         self.procs = p
-        p.insert('int', Symbol(p.level(),
-                               None, # @@@ need to set location for CG
-                               ProcSig(ListSig(Sig('str')),Sig('int')),
-                               name='int'))
+        int_sym = Symbol(p.level(),
+                         None, # @@@ need to set location for CG
+                         ProcSig(ListSig(Sig('string')),Sig('int')),
+                         name='int')
+        p.insert('int', int_sym)
         p.push()
 
         # init types

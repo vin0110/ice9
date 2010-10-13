@@ -51,12 +51,12 @@ def propagateSigs(n):
             propagateSigs(k)
             n.sig.append(k.sig)
     elif t == "Program":
-        ProgagateSigs(n.body)
+        propagateSigs(n.body)
         n.sig = SigN
     elif t == "Proc":
-        ProgagateSigs(n.body)
+        propagateSigs(n.body)
         if n.returns:
-            n.sig = n.returns.sig
+            n.sig = n.returns
         else:
             n.sig = SigN
     elif t == "Int":
@@ -159,7 +159,6 @@ def propagateSigs(n):
         n.sig = None
 
     elif t == "Binop":
-        print 'bo', n.left
         propagateSigs(n.left)
         propagateSigs(n.right)
         try:
@@ -237,7 +236,9 @@ def doSemantics(ast, debug, verbose):
     Debug = debug
     Verbose = verbose
     propagateSigs(ast)
+
     # @@@ any other semantic checks? 
+    
 
 def main():
     pass

@@ -204,7 +204,11 @@ idx:	  '(' explist ')' idx2
         consume()
         e = R_exp()
         if TypeCheck:
-            var = Symbols.vars.lookup(name.value)
+            try:
+                var = Symbols.vars.lookup(name.value)
+            except AttributeError:
+                raise SemanticError(LookAhead, 'variable "%s" not found',
+                                    name.value)
         else:
             var = Var(LookAhead, Sym(LookAhead, name.value))
         return Assign(LookAhead, var, e)
@@ -348,9 +352,10 @@ fa:	  id ':=' exp 'to' exp '->' stms 'af'
     # add itervar AFTER the expressions
     Symbols.vars.push()
     if TypeCheck:
-        itervar = Symbol(Symbols.vars.level(),None,Sig('int'), name=name.value)
-        itervar.assignable = False
-        Symbols.vars.insert(itervar.name, itervar)
+        itervar = Var(LookAhead, \
+                  Symbol(Symbols.vars.level(),None,Sig('int'), name=name.value))
+        itervar.sym.assignable = False
+        Symbols.vars.insert(itervar.sym.name, itervar)
     else:
         itervar = Sym(LookAhead, name.value)
     InLoop += 1
@@ -381,13 +386,26 @@ proc:	 id '(' declist ')' returns body 'end'
     if TypeCheck:
         # lookup fname in outermost scope
         try:
-            Symbols.procs.lookup(fname.value, local=True)
-            raise SemanticError(LookAhead, 
-                                'name clash; proc "%s" already defined', 
-                                fname.value)
+            sym = Symbols.procs.lookup(fname.value)
+            if sym.__dict__.has_key('forward') and sym.forward:
+                forwarded = True
+            else:
+                raise SemanticError(LookAhead, \
+                                       'name clash; proc "%s" already defined',\
+                                        fname.value)
         except AttributeError:
             # name is not used
-            pass
+            forwarded = False
+
+        if returns:
+            try:
+                returns_sig = Symbols.types.lookup(returns.value)
+            except AttributeError:
+                raise SemanticError(LookAhead, 'invalid return type for proc')
+            r = Symbol(Symbols.vars.level(),None,returns_sig,name=fname.value)
+            Symbols.vars.insert(fname.value, Var(LookAhead, r))
+        else:
+            returns_sig = None
 
         params_sig = ListSig(None)
         if params:
@@ -400,19 +418,30 @@ proc:	 id '(' declist ')' returns body 'end'
                                         p.value)
                 except AttributeError:
                     pass
-                psym = Symbol(Symbols.vars.level(),None,p.sig, name=p.value)
-                Symbols.vars.insert(p.value, psym)
+                psym = Symbol(Symbols.vars.level(),None,p.sig, name=p.sym.name)
+                Symbols.vars.insert(p.sym.name, Var(LookAhead, psym))
 
-        if returns:
-            returns_sig = returns.sig
+        if forwarded:
+            try:
+                if not params_sig.check(sym.sig.params):
+                    raise SemanticError(LookAhead, \
+                     'parameter mismatch between proc and forward declarations')
+                if returns_sig:
+                    if not returns_sig.check(sym.sig.returns):
+                        raise SemanticError(LookAhead, 'return type conflict between proc and forward declarations')
+                else:
+                    if sym.sig.returns:
+                        raise SemanticError(LookAhead, 'return type conflict between proc and forward declarations')
+            except AttributeError:
+                    raise SemanticError(LookAhead, \
+                          'forward declaration conflicts with proc declaration')
+            sym.forward = False
         else:
-            returns_sig = None
-        sym = Symbol(Symbols.procs.level(), 
-                     None,
-                     ProcSig(params_sig, returns_sig),
-                     name=fname.value)
-        Symbols.procs.insert(fname.value, sym)
-        #Symbols.procs.show()
+            sym = Symbol(Symbols.procs.level(), 
+                         None,
+                         ProcSig(params_sig, returns_sig),
+                         name=fname.value)
+            Symbols.procs.insert(fname.value, sym)
     else:
         # create dummy symbol
         sym = Symbol(1, None, None)
@@ -437,8 +466,10 @@ returns: ':' typeid
     if LookAhead.type == "COLON":
         consume()
         typeid = consume("ID")
+        return typeid
     else:
-        pass
+        return None
+
 
 def R_body():
     '''
@@ -470,9 +501,42 @@ forward:  id '(' declist ')' returns
     debug(R_forward)
     fname = consume("ID")
     consume('LPAREN')
-    R_declist()
+    params = R_declist()
     consume('RPAREN')
-    R_returns()
+    returns = R_returns()
+
+    if TypeCheck:
+        # lookup fname in outermost scope
+        try:
+            Symbols.procs.lookup(fname.value)
+            raise SemanticError(LookAhead, 
+                                'name clash; proc "%s" already defined', 
+                                fname.value)
+        except AttributeError:
+            # name is not used
+            pass
+
+        params_sig = ListSig(None)
+        if params:
+            for p in params.kids:
+                params_sig.append(p.sig)
+
+        if returns:
+            try:
+                returns_sig = Symbols.types.lookup(returns.value)
+            except AttributeError:
+                raise SemanticError(LookAhead, 'invalid return type for proc')
+            r = Symbol(Symbols.vars.level(),None,returns_sig,name=fname.value)
+            Symbols.vars.insert(fname.value, Var(LookAhead, r))
+        else:
+            returns_sig = None
+        sym = Symbol(Symbols.procs.level(), 
+                     None,
+                     ProcSig(params_sig, returns_sig),
+                     name=fname.value)
+        sym.forward = True
+        Symbols.procs.insert(fname.value, sym)
+        
 
 def R_var():
     '''

@@ -198,6 +198,8 @@ class Proc(Node):
         self.returns = returns
         self.params = params
         self.body = body
+        self.forward = False
+
     def show(self, level=0):
         s = "%s%s(%s)" % (indent(level), self.type, self.name)
         if self.returns:

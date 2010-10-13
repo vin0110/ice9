@@ -33,6 +33,10 @@ class SemanticError(CompilerError):
         self.args = args
 
     def __str__(self):
-        return 'SemanticError: line %d: ' % (self.tok.lineno) \
-            + self.fmt % tuple(self.args)
+        try:
+            return 'SemanticError: line %d: ' % (self.tok.lineno) \
+                + self.fmt % tuple(self.args)
+        except AttributeError:
+            return 'SemanticError: ' + self.fmt % tuple(self.args)
+            
 

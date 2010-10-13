@@ -1,0 +1,12 @@
+# second example from spec clarification					succeed
+
+proc f()
+	type int = bool
+	
+	var b : int			# uses level 2, proc
+	b:= true;
+end
+	
+var a : int				# uses level 0, built-in
+	
+a:= 1;

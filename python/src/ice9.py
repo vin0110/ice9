@@ -15,7 +15,7 @@ import getopt, sys
 #########
 # Global error class
 #########
-from errors import CompilerError
+from errors import CompilerError, SemanticError
 
 #########
 # Local imports
@@ -204,6 +204,10 @@ def ice9(source=None,opt_level=0,debug=0,verbose=0,
 
     ast = parse(**parse_args)
     doSemantics(ast, debug, verbose)
+    # check if all forward were finished
+    for n, sym in Symbols.procs.items():
+        if sym.__dict__.has_key('forward') and sym.forward:
+            raise SemanticError(None, 'forwarded proc "%s" not defined',n)
 
     if showast and ast:
         ast.show(0)
