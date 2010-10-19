@@ -14,11 +14,11 @@ CSC 512
 #########
 # Local imports
 #########
-from ast import Seq, StmList, ExpList, TypeList, IdxList, VarList, \
+from ast import Seq, StmList, ExpList, TypeList, VarList, \
     Program, DecList,\
     Int, Str, Bool, Proc, Forward, \
     If, Do, Fa, Exit, Write, Break, Return, Assign, \
-    Binop, Uniop, Call, Var, Sym, Read, Nop
+    Binop, Uniop, Call, Var, Sym, Read, Nop, Idx, Rval, Lval
 
 from symbol import Sig, ListSig
 
@@ -27,7 +27,7 @@ from symbol import Sig, ListSig
 #########
 Debug=0
 Verbose=0
-from errors import SemanticError
+from errors import SemanticError, SigError
 
 # @@@ should get same object as parser
 SigI = Sig('int')
@@ -69,43 +69,34 @@ def propagateSigs(n):
         pass
     elif t == "If":
         propagateSigs(n.test)
-        if not n.test.sig.check(SigB):
-            raise SemanticError(n.test.token, 
-                                'If test expression must be bool, not %s',
-                                n.test.sig)
+        n.test.sigCheck(SigB)
         propagateSigs(n.then)
         propagateSigs(n.elze)
         n.sig = SigN
     elif t == "Do":
         propagateSigs(n.test)
-        if not n.test.sig.check(SigB):
-            raise SemanticError(n.test.token, 
-                                'Do test expression must be bool, not %s',
-                                n.test.sig)
+        n.test.sigCheck(SigB)
         propagateSigs(n.body)
         n.sig = SigN
     elif t == "Fa":
         #propagateSigs(n.var)
         propagateSigs(n.start)
-        if not n.start.sig.check(SigI):
-            raise SemanticError(n.start.token, 
-                                'Fa start expression must be int, not %s',
-                                n.start.sig)
+        n.start.sigCheck(SigI)
         propagateSigs(n.end)
-        if not n.end.sig.check(SigI):
-            raise SemanticError(n.end.token, 
-                                'Fa end expression must be int, not %s',
-                                n.end.sig)
+        n.end.sigCheck(SigI)
         propagateSigs(n.body)
         n.sig = SigN
     elif t == "Exit":
         n.sig = SigN
     elif t == "Write":
         propagateSigs(n.exp)
-        if not n.exp.sig.check(SigI) and not n.exp.sig.check(SigS):
-            raise SemanticError(n.token, \
-                      'write statement requires int or string, not %s', \
-                      n.exp.sig)
+        try:
+            n.exp.sigCheck(SigI)
+        except SigError:
+            try:
+                n.exp.sigCheck(SigS)
+            except SigError:
+                raise SigError(n.token, "write requires int or string")
         n.sig = SigN
     elif t == "Break":
         n.sig = SigN
@@ -113,12 +104,8 @@ def propagateSigs(n):
         propagateSigs(n.exp)
         n.sig = SigN
     elif t == "Assign":
-        propagateSigs(n.var)
+        propagateSigs(n.lval)
         propagateSigs(n.exp)
-        if not n.var.sym.assignable:
-            raise SemanticError(n.token, '%s cannot be an l-value', \
-                                    n.var.sym.name)
-
         '''
         sig = n.var.sig
         for idx in n.var.under.kids:
@@ -144,15 +131,9 @@ def propagateSigs(n):
         except AttributeError:
             raise SemanticError(n.token, 'invalid assignment')
         '''
+        n.lval.sigCheck(n.exp.sig)
         try:
-            if not n.var.sig.check(n.exp.sig):
-                raise SemanticError(n.token, 'type mismatch %s != %s',
-                                    n.var.sig, n.exp.sig)
-        except AttributeError:
-            raise SemanticError(n.token, 'invalid assignment')
-        
-        try:
-            n.var.sig.under
+            n.lval.sig.under
             raise SemanticError(n.token, 'cannot assign arrays')
         except AttributeError:
             pass
@@ -162,38 +143,49 @@ def propagateSigs(n):
         propagateSigs(n.left)
         propagateSigs(n.right)
         try:
-            n.sig = checkBinop(n.op, n.left.sig, n.right.sig)
+            n.sig = checkBinop(n)
         except ValueError, e:
             raise SemanticError(n.token, str(e))
     elif t == "Uniop":
         propagateSigs(n.exp)
-        sig = n.exp.sig
-        if n.op == '-' and (sig.check(SigI) or sig.check(SigB)):
-            n.sig = sig
-        elif n.op == '?' and sig.check(SigB):
+        if n.op == '-':
+            # can be int or bool
+            try:
+                n.exp.sigCheck(SigI)
+            except SigError:
+                try:
+                    n.exp.sigCheck(SigB)
+                except SigError:
+                    raise SigError(n.token, "uniop %s requires int or bool", op)
+            n.sig = n.exp.sig
+        elif n.op == '?':
+            n.exp.sigCheck(SigB)
             n.sig = SigI
         else:
             raise SemanticError(n.token, 'invalid type of uniop ' + n.op)
     elif t == "Call":
         propagateSigs(n.args)
         # compare param types
+        print 'jj', n.args.sig, n.sym.sig.params
         if not n.args:
             args_sig = ListSig(None)
         else:
             args_sig = n.args.sig
-        try:
-            if n.sym.sig.params.check(args_sig):
-                pass
-            else:
-                raise SemanticError(n.token, 
-                                    'param mismatch in proc call for "%s"',
-                                    n.sym.name)
-        except AttributeError:
-            raise SemanticError(n.token, 'invalid param list')
+        n.sym.sig.params.check(args_sig)
+    elif t == "Idx":
+        propagateSigs(n.exp)
+        n.exp.sigCheck(SigI)
+        propagateSigs(n.under)
+        n.size = n.under.sig.size
+        n.sig = n.under.sig.under
     elif t == "Var":
+        """
         sig = n.sym.sig
         if n.under:
+            print 'varrr', n.under
             for k in n.under.kids:
+                if k.type == 'Int':
+                    print 'kk', k, k.value
                 propagateSigs(k)
                 try:
                     if not k.sig.check(SigI):
@@ -202,8 +194,22 @@ def propagateSigs(n):
                 except AttributeError:
                     raise SemanticError(n.token, 
                                         "invalid array index expression")
+                k.sig = sig
                 sig = sig.under
-        n.sig = sig
+        """
+        n.sig = n.sym.sig
+    elif t =="Lval":
+        propagateSigs(n.var)
+        n.sig = n.var.sig
+        v = n.var
+        while v.type == "Idx":
+            v = v.under
+        if not v.sym.assignable:
+            raise SemanticError(n.token, '%s cannot be an l-value', \
+                                    v.sym.name)
+    elif t =="Rval":
+        propagateSigs(n.var)
+        n.sig = n.var.sig
     elif t == "Sym":
         pass
     elif t == "Read":
@@ -213,27 +219,66 @@ def propagateSigs(n):
     else:
         raise SemanticError(n.token, "propogateSigs: invalid type %s", t)
 
-def checkBinop(op, l, r):
+def checkBinop(n):
+    op = n.op
     if op in ['*', '+']:
-        # must be same, int or bool
-        if l.check(r) and (l.check(SigI) or l.check(SigB)):
-            return l
+        # must be same
+        n.left.sigCheck(n.right.sig)
+        # must be int or bool
+        try:
+            n.left.sigCheck(SigI)
+        except SigError:
+            try:
+                n.left.sigCheck(SigB)
+            except SigError:
+                raise SigError(n.token, "binop %s requires int or bool", op)
+        return n.left.sig
     elif op in ['=', '!=']:
-        # must be same, int or bool, result bool
-        if l.check(r) and (l.check(SigI) or l.check(SigB)):
-            return SigB
+        # must be same
+        n.left.sigCheck(n.right.sig)
+        # must be int or bool
+        try:
+            n.left.sigCheck(SigI)
+        except SigError:
+            try:
+                n.left.sigCheck(SigB)
+            except SigError:
+                raise SigError(n.token, "binop %s requires int or bool", op)
+        # result bool
+        return SigB
     elif op in [">", "<", ">=", "<="]:
-        # must be same, int, result bool
-        if l.check(r) and l.check(SigI):
-            return SigB
+        # must be same
+        n.left.sigCheck(n.right.sig)
+        # must be int
+        n.left.sigCheck(SigI)
+        # result bool
+        return SigB
     elif op in ['-', '/', '%']:
-        # must be same, must be int
-        if l.check(r) and l.check(SigI):
-            return l
+        # must be same
+        n.left.sigCheck(n.right.sig)
+        # must be int
+        n.left.sigCheck(SigI)
+        # return int
+        return SigI
     else:
         raise ValueError('invalid binop ' + op)
     raise ValueError('invalid types for binop ' + op)
 
+def arrSize(sig):
+    def _arrsize(sig):
+        if sig.type == "ArrSig":
+            sig = _arrsize(sig.under)
+            return 
+        else:
+            return sig
+
+    print 'as', sig
+    s = _arrsize(sig)
+    try:
+        return s.size
+    except AttributeError:
+        return 1
+    
 def doSemantics(ast, debug, verbose):
     global Debug, Verbose
 

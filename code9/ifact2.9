@@ -1,0 +1,17 @@
+# iterative factorial program -- without proc
+
+var f, ifact: int;
+
+writes "What number to you want to compute the factorial of? ";
+f := read;
+if (f < 1) + (f > 100) -> write "Invalid n: limited to 0 < n < 101"; exit; fi
+
+
+writes "Factorial of ";
+writes f;
+writes " is ";
+
+ifact := 1;
+fa k := 2 to f -> ifact := ifact * k; af
+
+write ifact;

@@ -11,32 +11,37 @@ CSC 512
 # Exceptions
 #########
 class CompilerError(Exception):
-    pass
-
-class ParseError(CompilerError):
-    def __init__(self, la, fmt, *args):
-        Exception.__init__(self, *args)
-        self.la = la
-        self.fmt = fmt
-        self.args = args
-
-    def __str__(self):
-        return 'ParseError: line %d: ' % (self.la.lineno) \
-            + self.fmt % tuple(self.args)
-
-
-class SemanticError(CompilerError):
     def __init__(self, tok, fmt, *args):
-        Exception.__init__(self, *args)
+        super(CompilerError,self).__init__()
         self.tok = tok
         self.fmt = fmt
         self.args = args
+        self.name = "CompilerError"
 
     def __str__(self):
         try:
-            return 'SemanticError: line %d: ' % (self.tok.lineno) \
+            self.tok.lineno
+            return self.name + ': line %d: ' % (self.tok.lineno) \
                 + self.fmt % tuple(self.args)
         except AttributeError:
-            return 'SemanticError: ' + self.fmt % tuple(self.args)
-            
+            return self.name + ': ' + self.fmt % tuple(self.args)
 
+class SigError(CompilerError):
+    def __init__(self, tok, fmt, *args):
+        super(SigError,self).__init__(tok, fmt, *args)
+        self.name = "TypeError"
+
+class ParseError(CompilerError):
+    def __init__(self, tok, fmt, *args):
+        super(ParseError,self).__init__(tok, fmt, *args)
+        self.name = "ParseError"
+   
+class SemanticError(CompilerError):
+    def __init__(self, tok, fmt, *args):
+        super(SemanticError,self).__init__(tok, fmt, *args)
+        self.name = "SemanticError"
+            
+class CodeGenError(CompilerError):
+    def __init__(self, tok, fmt, *args):
+        super(CodeGenError,self).__init__(tok, fmt, *args)
+        self.name = "CodeGenError"

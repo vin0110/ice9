@@ -14,6 +14,7 @@ CSC 512
 #########
 # Local imports
 #########
+from errors import SigError
 
 #########
 # Globals
@@ -104,13 +105,16 @@ class Sig(object):
     def show(self):
         return 'Sig(%s)' % (self.type,)
 
-    def check(self, sig):
+    def check(self, token, sig):
         try:
             if self.type == sig.type:
                 return True
         except AttributeError:
             pass
-        return False
+        raise SigError(token, "sig mismatch: %s != %s", self.type, sig.type)
+
+    def space(self):
+        return 1
 
 class ArrSig(Sig):
     def __init__(self, under, size):
@@ -126,13 +130,17 @@ class ArrSig(Sig):
             u = u.under
         return u.__str__() + s
 
-    def check(self, sig):
-        if self.type == sig.type:
+    def check(self, token, sig):
+        print 'sss', self.size, sig.size
+        if self.type == sig.type and self.size == sig.size:
             try:
                 return self.under.check(sig.under)
             except AttributeError:
                 pass
-        return False
+        raise SigError(token, "sig mismatch: %s != %s", self.type, sig.type)
+
+    def space(self):
+        return self.size * self.under.space()
 
 class ListSig(Sig):
     def __init__(self, this):
@@ -148,14 +156,22 @@ class ListSig(Sig):
     def append(self, that):
         self.kids.append(that)
 
-    def check(self, sig):
+    def check(self, token, sig):
         if self.type == sig.type:
             if len(self.kids) == len(sig.kids):
                 for i in range(len(self.kids)):
-                    if self.kids[i].type != sig.kids[i].type:
-                        return False
+                    if not self.kids[i].check(sig.kids[i]):
+                        raise SigError(token, "sig mismatch: %s != %s", 
+                                       self.type, sig.type)
+
                 return True
-        return False
+        raise SigError(token, "sig mismatch: %s != %s", self.type, sig.type)
+
+    def space(self):
+        size = 0
+        for k in self.kids:
+            size += k.size
+        return size
 
 class ProcSig(Sig):
     def __init__(self, params, returns):
@@ -170,11 +186,11 @@ class ProcSig(Sig):
         else:
             return s
 
-    def check(self, sig):
+    def check(self, token, sig):
         if self.type == sig.type:
             if self.returns == self.returns:
                 return self.params.check(sig.params)
-        return False
+        raise SigError(token, "sig mismatch: %s != %s", self.type, sig.type)
 
 #########
 class Symbols(object):
@@ -205,6 +221,14 @@ class Symbols(object):
         self.vars.show()
         self.types.show()
         self.procs.show()
+
+
+#########
+# Externals
+#########
+SigI = Sig('int')
+SigB = Sig('bool')
+SigS = Sig('string')
     
 def main():
     pass

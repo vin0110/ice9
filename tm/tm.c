@@ -3,6 +3,8 @@
 /* The TM ("Tiny Machine") computer                           */
 /* Compiler Construction: Principles and Practice             */
 /*                                                            */
+/* v2.7.4  Modified VW Freeh October 13, 2010 		      */
+/*	   Added configurable number of registers.	      */
 /* v2.7.3  Modified VW Freeh March 9, 2010 		      */
 /*	   Added command line options.			      */
 /* v2.7.2  Modified VW Freeh February 23, 2010 		      */
@@ -58,7 +60,8 @@ char *versionNumber ="TM version 2.7.3";
 /******* const *******/
 #define   IADDR_SIZE  10000	/* increase for large programs */
 #define   DADDR_SIZE  10000	/* increase for large programs */
-#define   NO_REGS 8
+#define   NO_REGS 10000
+#define   DEFAULT_NO_REGS 8
 #define   PC_REG  7
 
 #define   LINESIZE  200
@@ -149,6 +152,7 @@ int instrCount = 0;
 int dmemStart = 0;
 int dmemCount = 0;
 int dmemDown = TRUE;
+int no_regs = DEFAULT_NO_REGS;
 
 INSTRUCTION iMem[IADDR_SIZE];
 int iMemTag[IADDR_SIZE];
@@ -379,7 +383,7 @@ void clearMachine()
 
     iloc = 0;
     dloc = 0;
-    for (regNo = 0; regNo<NO_REGS; regNo++) reg[regNo] = 0;
+    for (regNo = 0; regNo<no_regs; regNo++) reg[regNo] = 0;
     dMem[0] = DADDR_SIZE - 1;
     dMemTag[0] = NOTUSED;
     for (loc = 1; loc<DADDR_SIZE; loc++) {
@@ -505,17 +509,17 @@ int readInstructions(char *fileName)
 	    switch (opClass(op)) {
 	    case opclRR:
                 /***********************************/
-		if ((!getNum()) || (num<0) || (num >= NO_REGS))
+		if ((!getNum()) || (num<0) || (num >= no_regs))
 		    return error("Bad first register", lineNo, loc);
 		arg1 = num;
 		if (!skipCh(','))
 		    return error("Missing comma", lineNo, loc);
-		if ((!getNum()) || (num<0) || (num >= NO_REGS))
+		if ((!getNum()) || (num<0) || (num >= no_regs))
 		    return error("Bad second register", lineNo, loc);
 		arg2 = num;
 		if (!skipCh(','))
 		    return error("Missing comma", lineNo, loc);
-		if ((!getNum()) || (num<0) || (num >= NO_REGS))
+		if ((!getNum()) || (num<0) || (num >= no_regs))
 		    return error("Bad third register", lineNo, loc);
 		arg3 = num;
 		break;
@@ -523,7 +527,7 @@ int readInstructions(char *fileName)
 	    case opclRM:
 	    case opclRA:
                 /***********************************/
-		if ((!getNum()) || (num<0) || (num >= NO_REGS))
+		if ((!getNum()) || (num<0) || (num >= no_regs))
 		    return error("Bad first register", lineNo, loc);
 		arg1 = num;
 		if (!skipCh(','))
@@ -533,7 +537,7 @@ int readInstructions(char *fileName)
 		arg2 = num;
 		if (!skipCh('(') && !skipCh(','))
 		    return error("Missing LParen", lineNo, loc);
-		if ((!getNum()) || (num<0) || (num >= NO_REGS))
+		if ((!getNum()) || (num<0) || (num >= no_regs))
 		    return error("Bad second register", lineNo, loc);
 		arg3 = num;
 		break;
@@ -914,7 +918,7 @@ int doCommand(void)
 
     case 'r':
         /***********************************/
-	for (i = 0; i<NO_REGS; i++) {
+	for (i = 0; i<no_regs; i++) {
 	    printf("r[%1d]: %-4d   ", i, reg[i]);
 	    if ((i%4) == 3) printf("\n");
 	}
@@ -925,7 +929,7 @@ int doCommand(void)
 	if (getNum()) {
 	    loc = num;
 	    if (getNum()) {
-		if (loc<0 || loc>=NO_REGS) printf("%d is not a legal register number\n", loc);
+		if (loc<0 || loc>=no_regs) printf("%d is not a legal register number\n", loc);
 		else reg[loc] = num;
 	    }
 	    else printf("Register value?\n");
@@ -1074,9 +1078,11 @@ int doCommand(void)
 
 int clusage(char *name) {
   printf("%s -[abl] <tmfile>\n", name);
-  printf("\t-a|--abort <limit>\tset abort limit (default 20000)\n");
+  printf("\t-a|--abort <limit>\tset abort limit (default %d)\n", DEFAULT_ABORT_LIMIT);
   printf("\t-b|--batch\t\trun in batch mode\n");
   printf("\t-l|--list\t\tlist instructions and exit\n");
+  printf("\t-r|--registers <n>\tset register set size (default %d, max %d)\n", 
+	 DEFAULT_NO_REGS, NO_REGS);
   exit(-1);
 }
 
@@ -1094,6 +1100,22 @@ int main(int argc, char *argv[])
 	  printf("abort limit must be positive, was %d\n", abortLimit);
 	  exit(-1);
 	}
+      }
+      else
+	clusage(argv[0]);
+    }
+    else if (!strcmp("-r", argv[a]) || !strcmp("--registers", argv[a])) {
+      if (++a < argc) {
+	no_regs = atoi(argv[a]);
+	if (no_regs < DEFAULT_NO_REGS) {
+	  printf("register set size must be greater than %d\n",DEFAULT_NO_REGS);
+	  exit(-1);
+	}
+	else if (no_regs > NO_REGS) {
+	  printf("register set size must not be greater than %d\n", NO_REGS);
+	  exit(-1);
+	}
+
       }
       else
 	clusage(argv[0]);

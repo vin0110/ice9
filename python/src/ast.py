@@ -6,6 +6,8 @@ VW Freeh copyright 2010
 CSC 512
 """
 
+from errors import SemanticError
+
 INDENT="  "
 def indent(i):
     return INDENT*i
@@ -29,6 +31,12 @@ class Node(object):
         if self.sig:
             s += ': ' + self.sig.__str__()
         print s
+    def sigCheck(self, sig):
+        try:
+            self.sig.check(self.token,sig)
+        except AttributeError:
+            raise SemanticError(self.token, "type mismatch: %s != %s",
+                                self.sig, sig)
 
 #########        
 # list nodes
@@ -97,13 +105,6 @@ class DecList(Seq):
     '''
     def __init__(self, tok, left, **kwargs):
         super(DecList,self).__init__(tok, 'Dec', left, **kwargs)
-
-class IdxList(Seq):
-    '''
-    List of expressions, that stand for array substripting.
-    '''
-    def __init__(self, tok, left, **kwargs):
-        super(IdxList,self).__init__(tok, 'Idx', left, **kwargs)
 
 class ProcList(Seq):
     '''
@@ -311,19 +312,43 @@ class Return(Node):
             self.exp.show(level+1)
 
 class Assign(Node):
-    def __init__(self, tok, var, exp, **kwargs):
+    def __init__(self, tok, val, exp, **kwargs):
         super(Assign,self).__init__(tok,'Assign',**kwargs)
-        self.var = var
+        self.lval = val
         self.exp = exp
     def show(self, level=0):
         super(Assign, self).show(level)
         level += 1
-        self.var.show(level)
+        self.lval.show(level)
         self.exp.show(level)
 
 #########
 # Expressions
 #########
+class Lval(Node):
+    def __init__(self, tok, var, **kwargs):
+        super(Lval,self).__init__(tok,'Lval',**kwargs)
+        self.var = var
+    def show(self, level=0):
+        s = indent(level) + self.__str__()
+        if self.sig:
+            s += ": " + self.sig.__str__()
+        print s
+        level += 1
+        self.var.show(level)
+
+class Rval(Node):
+    def __init__(self, tok, var, **kwargs):
+        super(Rval,self).__init__(tok,'Rval',**kwargs)
+        self.var = var
+    def show(self, level=0):
+        s = indent(level) + self.__str__()
+        if self.sig:
+            s += ": " + self.sig.__str__()
+        print s
+        level += 1
+        self.var.show(level)
+
 class Binop(Node):
     def __init__(self, tok, op, left, right, **kwargs):
         super(Binop,self).__init__(tok,'Binop',**kwargs)
@@ -352,22 +377,44 @@ class Uniop(Node):
         print s
         self.exp.show(level+1)
 
+class Idx(Node):
+    '''
+    Index of a variable.  
+    '''
+    def __init__(self, tok, exp, under, **kwargs):
+        super(Idx,self).__init__(tok,'Idx',**kwargs)
+        self.exp = exp
+        self.under = under
+        self.var = None
+        self.depth = 0
+    def show(self, level=0):
+        s = "%s%s" % (indent(level), self.type)
+        if self.sig:
+            s += ': ' + self.sig.__str__()
+        print s
+        self.exp.show(level+1)
+        if self.under:
+            self.under.show(level+1)
+            
+    def __str__(self):
+        try:
+            return "%s(%s)" %(self.type, self.sym.name,)
+        except AttributeError:
+            return super(Idx,self).__str__()
+    
+
 class Var(Node):
     '''
     Variable.  
-    Under is optional array subscripts (as list)
     '''
     def __init__(self, tok, sym, **kwargs):
         super(Var,self).__init__(tok,'Var',**kwargs)
         self.sym = sym
-        self.under = None
     def show(self, level=0):
         s = "%s%s(%s)" % (indent(level), self.type, self.sym.name)
         if self.sig:
             s += ': ' + self.sig.__str__()
         print s
-        if self.under:
-            self.under.show(level+1)
     def __str__(self):
         try:
             return "%s(%s)" %(self.type, self.sym.name,)

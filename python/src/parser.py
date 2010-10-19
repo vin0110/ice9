@@ -8,11 +8,11 @@ VW Freeh copyright 2010
 # Library imports
 #########
 import sys
-from ast import Seq, StmList, ExpList, TypeList, IdxList, VarList, \
+from ast import Seq, StmList, ExpList, TypeList, VarList, \
     Program, DecList, ProcList, \
     Int, Str, Bool, Proc, Forward, \
     If, Do, Fa, Exit, Write, Break, Return, Assign, \
-    Binop, Uniop, Call, Var, Sym, Read, Nop
+    Binop, Uniop, Call, Var, Sym, Read, Nop, Lval, Rval, Idx
 
 #########
 # Local imports
@@ -36,6 +36,9 @@ Verbose = 0
 InLoop = 0
 Lexer = None
 TypeCheck=True
+ShowSymbolTables=False
+LocalOffset=0
+GlobalOffset=0
 
 #########
 # First sets
@@ -44,6 +47,11 @@ TypeCheck=True
 FirstExp = ['LPAREN',"INT","SLIT","READ","MINUS","QUEST","ID", "TRUE","FALSE"]
 FirstStm_= ['IF','DO',"FA","BREAK","EXIT","RETURN","WRITE","WRITES","SEMI"] 
 FirstStm = FirstStm_ + FirstExp
+
+class iLitList(object):
+    def __init__(self, ilit):
+        self.ilit = ilit
+        self.next = None
 
 #########
 # Grammar rules
@@ -78,6 +86,11 @@ program:  'type' type program
         R_var()
         return R_program(L)
     else:
+        if ShowSymbolTables:
+            Symbols.vars.show()
+            Symbols.types.show()
+            Symbols.procs.show()
+        
         stms = R_ostms()
         if LookAhead.type is not "EOF":
             raise ParseError(LookAhead, 'syntax error near %s', LookAhead.type)
@@ -149,23 +162,25 @@ stm:	 'if' if
     elif LookAhead.type == "RETURN":
         consume()
         e = R_optexp()
+        if TypeCheck and Symbols.procs.level() < 3:
+            raise SemanticError(LookAhead, 'return outside of proc')
         return Return(LookAhead, e)
     elif LookAhead.type in ["WRITE", "WRITES"]:
         w = consume()
         e = R_exp()
-        nl = w.value == 'writes'
-        w = Write(LookAhead, e, nl)
+        nl = w.value != 'writes'
+        w = Write(LookAhead, mkRval(e), nl)
         consume("SEMI")
         return w
     elif LookAhead.type == "ID":
         name = consume()
         e = R_idx(name)
         consume("SEMI")
-        return e
+        return mkRval(e)
     elif LookAhead.type in FirstExp:
         e = R_exp()
         consume("SEMI")
-        return e
+        return mkRval(e)
     else:
         consume("SEMI")
         return Nop(LookAhead)
@@ -203,6 +218,7 @@ idx:	  '(' explist ')' idx2
     elif LookAhead.type == 'ASSIGN':
         consume()
         e = R_exp()
+        e = mkRval(e)
         if TypeCheck:
             try:
                 var = Symbols.vars.lookup(name.value)
@@ -211,15 +227,15 @@ idx:	  '(' explist ')' idx2
                                     name.value)
         else:
             var = Var(LookAhead, Sym(LookAhead, name.value))
-        return Assign(LookAhead, var, e)
+        return Assign(LookAhead, Lval(LookAhead,var), e)
     elif LookAhead.type == 'LBRACK':
         if TypeCheck:
             var = Symbols.vars.lookup(name.value)
         else:
             sym = Sym(LookAhead, name.value)
             var = Var(LookAhead, sym)
-        var.under = R_index(None)
-        return R_idx3(var)
+        n = R_index(var)
+        return R_idx3(n)
     else:
         # return a var
         if TypeCheck:
@@ -252,7 +268,7 @@ idx3:	  ':=' exp
     if LookAhead.type == 'ASSIGN':
         consume()
         e = R_exp()
-        return Assign(LookAhead, v, e)
+        return Assign(LookAhead, Lval(LookAhead,v), mkRval(e))
     else:
         return R_idx2(v)
 
@@ -344,15 +360,16 @@ fa:	  id ':=' exp 'to' exp '->' stms 'af'
     debug(R_fa)
     name = consume("ID")
     consume('ASSIGN')
-    start = R_exp()
+    start = mkRval(R_exp())
     consume('TO')
-    end = R_exp()
+    end = mkRval(R_exp())
     consume('ARROW')
     # add itervar AFTER the expressions
     Symbols.vars.push()
     if TypeCheck:
         itervar = Var(LookAhead, \
-                  Symbol(Symbols.vars.level(),None,Sig('int'), name=name.value))
+                  Symbol(Symbols.vars.level(),nextOffset(),Sig('int'), \
+                             name=name.value))
         itervar.sym.assignable = False
         Symbols.vars.insert(itervar.sym.name, itervar)
     else:
@@ -360,6 +377,8 @@ fa:	  id ':=' exp 'to' exp '->' stms 'af'
     InLoop += 1
     body = R_stms() 
     InLoop -= 1
+    if ShowSymbolTables:
+        Symbols.vars.show()
     Symbols.vars.pop()
 
     consume('AF')
@@ -396,12 +415,14 @@ proc:	 id '(' declist ')' returns body 'end'
             # name is not used
             forwarded = False
 
+        clearLocalOffset()
         if returns:
             try:
                 returns_sig = Symbols.types.lookup(returns.value)
             except AttributeError:
                 raise SemanticError(LookAhead, 'invalid return type for proc')
-            r = Symbol(Symbols.vars.level(),None,returns_sig,name=fname.value)
+            r = Symbol(Symbols.vars.level(),nextOffset(),returns_sig,
+                       name=fname.value)
             Symbols.vars.insert(fname.value, Var(LookAhead, r))
         else:
             returns_sig = None
@@ -417,23 +438,24 @@ proc:	 id '(' declist ')' returns body 'end'
                                         p.sym.name)
                 except AttributeError:
                     pass
-                psym = Symbol(Symbols.vars.level(),None,p.sig, name=p.sym.name)
+                psym = Symbol(Symbols.vars.level(),nextOffset(),p.sig, 
+                              name=p.sym.name)
                 Symbols.vars.insert(p.sym.name, Var(LookAhead, psym))
 
         if forwarded:
             try:
-                if not params_sig.check(sym.sig.params):
-                    raise SemanticError(LookAhead, \
+                params_sig.check(LookAhead, sym.sig.params)
+            except SigError:
+                raise SemanticError(LookAhead, \
                      'parameter mismatch between proc and forward declarations')
-                if returns_sig:
-                    if not returns_sig.check(sym.sig.returns):
+            if returns_sig:
+                try:
+                    returns_sig.check(LookAhead,sym.sig.returns)
+                except SigError:
                         raise SemanticError(LookAhead, 'return type conflict between proc and forward declarations')
-                else:
-                    if sym.sig.returns:
-                        raise SemanticError(LookAhead, 'return type conflict between proc and forward declarations')
-            except AttributeError:
-                    raise SemanticError(LookAhead, \
-                          'forward declaration conflicts with proc declaration')
+            else:
+                if sym.sig.returns:
+                    raise SemanticError(LookAhead, 'return type conflict between proc and forward declarations')
             sym.forward = False
         else:
             sym = Symbol(Symbols.procs.level(), 
@@ -449,6 +471,9 @@ proc:	 id '(' declist ')' returns body 'end'
     sym.body = R_body()
     
     # cleanup
+    if ShowSymbolTables:
+        Symbols.vars.show()
+        Symbols.types.show()
     Symbols.vars.pop()
     Symbols.types.pop()
     consume('END')
@@ -556,15 +581,24 @@ var:	  idlist ':' typeid array varx ';'
         except AttributeError:
             raise SemanticError(LookAhead, 'type not found "%s"', t.value)
         while a:
-            if a.kids[0].value < 1:
+            if a.ilit.value < 1:
                 raise SemanticError(LookAhead, \
                           'cannot define variable with non-positive array size')
-            g1 = ArrSig(g, a.kids[0].value)
+            g1 = ArrSig(g, a.ilit.value)
             g = g1
             a = a.next
+        
         level = Symbols.vars.level()
+        size = g.space()
         for k in il.kids:
-            k.sym = Symbol(level, None, g, name=k.sym.name)
+            try:
+                Symbols.vars.lookup(k.sym.name, local=True)
+                raise SemanticError(LookAhead,
+                                    'local parameter "%s" re-definition',
+                                    k.sym.name)
+            except AttributeError:
+                pass
+            k.sym = Symbol(level, nextOffset(size=size), g, name=k.sym.name)
             Symbols.vars.insert(k.sym.name, k)
     if LookAhead.type == "COMMA":
         consume()
@@ -598,7 +632,7 @@ array:	  '[' int ']' array
         consume()
         i = consume("INT")
         consume("RBRACK")
-        a = IdxList(LookAhead, Int(i,i.value))
+        a = iLitList(Int(i,i.value))
         a.next = R_array()
         return a
     else:
@@ -657,10 +691,10 @@ type:	  id '=' typeid array
                                 new.value)
         except AttributeError:
             while a:
-                if a.kids[0].value < 1:
+                if a.ilit.value < 1:
                     raise SemanticError(LookAhead, \
                              'cannot define type with non-positive array size')
-                g1 = ArrSig(g, a.kids[0].value)
+                g1 = ArrSig(g, a.ilit.value)
                 g = g1
                 a = a.next
             Symbols.types.insert(new.value, g)
@@ -818,13 +852,13 @@ factor:   '(' exp ')'
         consume()
         n = R_exp()
         consume("RPAREN")
-        return n
+        return mkRval(n)
     elif LookAhead.type == "INT":
         i = consume()
         return Int(LookAhead, int(i.value))
     elif LookAhead.type == "SLIT":
         s = consume()
-        return Str(LookAhead, s.value)
+        return Str(LookAhead, s.value.strip('"\''))
     elif LookAhead.type == "READ":
         consume()
         return Read(LookAhead)
@@ -844,7 +878,8 @@ factor:   '(' exp ')'
         return Uniop(LookAhead, '?',n)
     elif LookAhead.type == "ID":
         i = consume()
-        return R_factorx(i)
+        e = R_factorx(i)
+        return mkRval(e)
     else:
         raise ParseError(LookAhead, 'syntax error near %s', LookAhead.type)
 
@@ -871,10 +906,9 @@ factorx:  '(' explist ')'
             v.sig = sym.sig
         else:
             v = Var(LookAhead, Sym(LookAhead, name.value))
-        v.under = R_index(None)
-        return v
+        return R_index(v)
 
-def R_index(idxlist):
+def R_index(n):
     '''
 index:	  '[' exp ']' index
 	|
@@ -883,14 +917,11 @@ index:	  '[' exp ']' index
     debug(R_index)
     if LookAhead.type == "LBRACK":
         consume()
-        if idxlist:
-            idxlist.append(R_exp())
-        else:
-            idxlist = IdxList(LookAhead, R_exp())
+        new = Idx(LookAhead,mkRval(R_exp()),n)
         consume("RBRACK")
-        return R_index(idxlist)
+        return R_index(new)
     else:
-        return idxlist
+        return n
 
 def R_explist():
     '''
@@ -953,9 +984,33 @@ def consume(tok=None):
     debug(consume, str(LookAhead), fmt="%s: %s", val=2)
     return prev         # @@@ should this return or just set LA?
 
+def clearLocalOffset():
+    global LocalOffset
+    LocalOffset = 0
+def nextOffset(size=1):
+    global LocalOffset, GlobalOffset
+    if Symbols.procs.level() > 2:
+        r = LocalOffset
+        LocalOffset += size
+    else:
+        r = GlobalOffset
+        GlobalOffset += size
+    return r
+def getGlobalOffset():
+    '''
+    called only by code gen
+    '''
+    return GlobalOffset
+
+def mkRval(e):
+    if e.type in ['Var', 'Idx']:
+        return Rval(e.token, e)
+    else:
+        return e
+
 def parse(lexer=None, debug=0, verbose=0, source=sys.stdin, nosemantics=False,
           showsym=False, symbols=None):
-    global Lexer, Debug, Verbose, TypeCheck, Symbols, \
+    global Lexer, Debug, Verbose, TypeCheck, ShowSymbolTables, Symbols, \
         BoolT, BoolF
     '''
     Parser for ice9
@@ -965,6 +1020,7 @@ def parse(lexer=None, debug=0, verbose=0, source=sys.stdin, nosemantics=False,
     Verbose = verbose
     TypeCheck = not nosemantics
     Symbols = symbols
+    ShowSymbolTables = TypeCheck and showsym
 
     # set LookAhead
     consume()

@@ -218,7 +218,7 @@ def ice9(source=None,opt_level=0,debug=0,verbose=0,
         outstream = open(outfile, 'w')
 
     if not nocg:
-        codegen(ast, outstream)
+        codegen(ast, outstream, {})
     exit(0)
 
 if __name__ == "__main__":
