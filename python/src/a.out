@@ -1,6 +1,6 @@
 * set regiseters
    0:     LD 5,0(0)	load memory size into GP
-   1:    LDA 6,-21(5)	set stack pointer
+   1:    LDA 6,-105(5)	set stack pointer
 * begin runtime
 * begin write string
    3:    JEQ 1,5(7)	write(str): test len == 0
@@ -27,18 +27,26 @@
 * end runtime
    2:    LDA 7,17(7)	jump over preamble
   20:    LDC 9,0(0)	int literal
-  21:    LDC 10,5(0)	int literal
-  22:    LDA 11,0(5)	load base addr of global
-  23:    LDA 1,0(10)	copy index
-  24:    LDC 2,3(0)	load ub
-  25:    LDC 0,27(0)	load return pc
-  26:    LDA 7,-11(7)	jump to bound check
-  27:    LDC 12,3(0)	load array stride
-  28:    MUL 12,12,10	stride * index
-  29:    SUB 12,11,12	adjust addr
-  30:    LDA 1,0(9)	copy index
-  31:    LDC 2,7(0)	load ub
-  32:    LDC 0,34(0)	load return pc
-  33:    LDA 7,-18(7)	jump to bound check
-  34:    SUB 13,12,9	adjust addr
-  35:     LD 14,0(13)	load variable
+  21:    LDC 10,0(0)	int literal
+  22:    LDC 11,3(0)	int literal
+  23:    LDA 12,0(5)	load base addr of global
+  24:    LDA 1,0(11)	copy index
+  25:    LDC 2,3(0)	load ub
+  26:    LDC 0,28(0)	load return pc
+  27:    LDA 7,-12(7)	jump to bound check
+  28:    LDC 13,15(0)	load array stride
+  29:    MUL 13,13,11	stride * index
+  30:    SUB 13,12,13	adjust addr
+  31:    LDA 1,0(10)	copy index
+  32:    LDC 2,5(0)	load ub
+  33:    LDC 0,35(0)	load return pc
+  34:    LDA 7,-19(7)	jump to bound check
+  35:    LDC 14,3(0)	load array stride
+  36:    MUL 14,14,10	stride * index
+  37:    SUB 14,13,14	adjust addr
+  38:    LDA 1,0(9)	copy index
+  39:    LDC 2,7(0)	load ub
+  40:    LDC 0,42(0)	load return pc
+  41:    LDA 7,-26(7)	jump to bound check
+  42:    SUB 15,14,9	adjust addr
+  43:     LD 16,0(15)	load variable

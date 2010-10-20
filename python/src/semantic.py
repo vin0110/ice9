@@ -166,7 +166,6 @@ def propagateSigs(n):
     elif t == "Call":
         propagateSigs(n.args)
         # compare param types
-        print 'jj', n.args.sig, n.sym.sig.params
         if not n.args:
             args_sig = ListSig(None)
         else:
@@ -266,7 +265,6 @@ def checkBinop(n):
 
 def arrSize(n):
     def _arrBot(n,k):
-        print '_ab', n,k
         try:
             (m, i) = _arrBot(n.under,k+1)
             return (m, i)
@@ -278,7 +276,7 @@ def arrSize(n):
         except AttributeError:
             return 0
     s, k = _arrBot(n,0)
-    u = _arrDim(n.sig)
+    u = _arrDim(s)
     for i in range(u-k-1):
         s = s.under
     return s.size
