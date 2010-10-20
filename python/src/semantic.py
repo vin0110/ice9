@@ -176,7 +176,7 @@ def propagateSigs(n):
         propagateSigs(n.exp)
         n.exp.sigCheck(SigI)
         propagateSigs(n.under)
-        n.size = n.under.sig.size
+        n.size = arrSize(n.under)
         n.sig = n.under.sig.under
     elif t == "Var":
         """
@@ -264,20 +264,24 @@ def checkBinop(n):
         raise ValueError('invalid binop ' + op)
     raise ValueError('invalid types for binop ' + op)
 
-def arrSize(sig):
-    def _arrsize(sig):
-        if sig.type == "ArrSig":
-            sig = _arrsize(sig.under)
-            return 
-        else:
-            return sig
-
-    print 'as', sig
-    s = _arrsize(sig)
-    try:
-        return s.size
-    except AttributeError:
-        return 1
+def arrSize(n):
+    def _arrBot(n,k):
+        print '_ab', n,k
+        try:
+            (m, i) = _arrBot(n.under,k+1)
+            return (m, i)
+        except AttributeError:
+            return (n.sig, k)
+    def _arrDim(s):
+        try:
+            return 1 + _arrDim(s.under)
+        except AttributeError:
+            return 0
+    s, k = _arrBot(n,0)
+    u = _arrDim(n.sig)
+    for i in range(u-k-1):
+        s = s.under
+    return s.size
     
 def doSemantics(ast, debug, verbose):
     global Debug, Verbose

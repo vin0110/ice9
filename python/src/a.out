@@ -1,0 +1,44 @@
+* set regiseters
+   0:     LD 5,0(0)	load memory size into GP
+   1:    LDA 6,-21(5)	set stack pointer
+* begin runtime
+* begin write string
+   3:    JEQ 1,5(7)	write(str): test len == 0
+   4:     LD 3,0(2)	r3 = *sp
+   5:   OUTC 3,3,3	out *sp
+   6:    LDA 2,1(2)	++sp
+   7:    LDA 1,-1(1)	--len
+   8:    LDA 7,-6(7)	goto top
+   9:    LDA 7,0(0)	jump back
+* end write string
+* begin array bounds
+.SDATA "ERROR: Array index out of bounds"	string literal
+  10:    LDC 1,32(0)	load size of error message
+  11:    LDC 2,1(0)	load location of error message
+  12:    LDC 0,14(0)	load return pc (halt inst below)
+  13:    LDA 7,-10(7)	jump to string call
+  14:  OUTNL 0,0,0
+  15:   HALT 0,0,0	exit after printing error message
+  16:    JLT 1,-7(7)	test lb
+  17:    SUB 1,2,1	test ub
+  18:    JLE 1,-9(7)	test ub
+  19:    LDA 7,0(0)	return
+* end array bounds
+* end runtime
+   2:    LDA 7,17(7)	jump over preamble
+  20:    LDC 9,0(0)	int literal
+  21:    LDC 10,5(0)	int literal
+  22:    LDA 11,0(5)	load base addr of global
+  23:    LDA 1,0(10)	copy index
+  24:    LDC 2,3(0)	load ub
+  25:    LDC 0,27(0)	load return pc
+  26:    LDA 7,-11(7)	jump to bound check
+  27:    LDC 12,3(0)	load array stride
+  28:    MUL 12,12,10	stride * index
+  29:    SUB 12,11,12	adjust addr
+  30:    LDA 1,0(9)	copy index
+  31:    LDC 2,7(0)	load ub
+  32:    LDC 0,34(0)	load return pc
+  33:    LDA 7,-18(7)	jump to bound check
+  34:    SUB 13,12,9	adjust addr
+  35:     LD 14,0(13)	load variable
