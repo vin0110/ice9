@@ -3,6 +3,8 @@
 /* The TM ("Tiny Machine") computer                           */
 /* Compiler Construction: Principles and Practice             */
 /*                                                            */
+/* v2.7.4a Modified VW Freeh October 21, 2010 		      */
+/*	   Added command to print only first 8 registers.     */
 /* v2.7.4  Modified VW Freeh October 13, 2010 		      */
 /*	   Added configurable number of registers.	      */
 /* v2.7.3  Modified VW Freeh March 9, 2010 		      */
@@ -37,7 +39,7 @@
 /*                                                            */
 /**************************************************************/
 
-char *versionNumber ="TM version 2.7.3";
+char *versionNumber ="TM version 2.7.4a";
 
 #include <stdio.h>
 #include <stdlib.h>
