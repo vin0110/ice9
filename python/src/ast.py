@@ -193,18 +193,20 @@ class Proc(Node):
     params 	: typelist
     body	: stmList
     '''
-    def __init__(self, tok, name, returns, params, body, **kwargs):
+    def __init__(self, tok, name, returns, params, sym, size, **kwargs):
         super(Proc,self).__init__(tok, 'Proc',**kwargs)
         self.name = name
         self.returns = returns
         self.params = params
-        self.body = body
+        self.sym = sym
+        self.size = size
+        self.body = sym.body
         self.forward = False
 
     def show(self, level=0):
         s = "%s%s(%s)" % (indent(level), self.type, self.name)
         if self.returns:
-            s +=  ' :', self.returns
+            s +=  ' : ' + self.returns.value
         if self.sig:
             s += ': ' + self.sig.__str__()
         print s

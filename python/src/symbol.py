@@ -160,7 +160,7 @@ class ListSig(Sig):
         if self.type == sig.type:
             if len(self.kids) == len(sig.kids):
                 for i in range(len(self.kids)):
-                    if not self.kids[i].check(sig.kids[i]):
+                    if not self.kids[i].check(token,sig.kids[i]):
                         raise SigError(token, "sig mismatch: %s != %s", 
                                        self.type, sig.type)
 

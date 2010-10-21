@@ -138,18 +138,24 @@ def main():
 
     if lexonly:
         if parseonly:
-            raise CompilerError("incompatible arguments: lexonly and parseonly")
+            raise CompilerError(n.token, 
+                                "incompatible arguments: lexonly and parseonly")
         elif showast:
-            raise CompilerError("incompatible arguments: lexonly and showast")
+            raise CompilerError(n.token, 
+                                "incompatible arguments: lexonly and showast")
         elif showsym:
-            raise CompilerError("incompatible arguments: lexonly and showsym")
+            raise CompilerError(n.token, 
+                                "incompatible arguments: lexonly and showsym")
         elif nocg:
-            raise CompilerError("incompatible arguments: lexonly and nocg")
+            raise CompilerError(n.token, 
+                                "incompatible arguments: lexonly and nocg")
     elif parseonly:
         if showsym:
-            raise CompilerError("incompatible arguments: parseonly and showsym")
+            raise CompilerError(n.token, 
+                                "incompatible arguments: parseonly and showsym")
         elif nocg:
-            raise CompilerError("incompatible arguments: parseonly and nocg")
+            raise CompilerError(n.token, 
+                                "incompatible arguments: parseonly and nocg")
 
     if opt_level > 0:
         lex_args['optimize'] = 1

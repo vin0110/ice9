@@ -27,6 +27,7 @@ from symbol import Sig, ListSig
 #########
 Debug=0
 Verbose=0
+EmitLibs=""
 from errors import SemanticError, SigError
 
 # @@@ should get same object as parser
@@ -62,6 +63,7 @@ def propagateSigs(n):
     elif t == "Int":
         n.sig = SigI
     elif t == "Str":
+        emitLib("S")
         n.sig = SigS
     elif t == "Bool":
         n.sig = SigB
@@ -170,8 +172,9 @@ def propagateSigs(n):
             args_sig = ListSig(None)
         else:
             args_sig = n.args.sig
-        n.sym.sig.params.check(args_sig)
+        n.sym.sig.params.check(n.token,args_sig)
     elif t == "Idx":
+        emitLib("A")
         propagateSigs(n.exp)
         n.exp.sigCheck(SigI)
         propagateSigs(n.under)
@@ -290,6 +293,12 @@ def doSemantics(ast, debug, verbose):
 
     # @@@ any other semantic checks? 
     
+
+def emitLib(s=None):
+    global EmitLibs
+    if s and s not in EmitLibs:
+        EmitLibs += s
+    return EmitLibs
 
 def main():
     pass

@@ -162,7 +162,7 @@ stm:	 'if' if
     elif LookAhead.type == "RETURN":
         consume()
         e = R_optexp()
-        if TypeCheck and Symbols.procs.level() < 3:
+        if TypeCheck and Symbols.procs.level() < 2:
             raise SemanticError(LookAhead, 'return outside of proc')
         return Return(LookAhead, e)
     elif LookAhead.type in ["WRITE", "WRITES"]:
@@ -471,14 +471,25 @@ proc:	 id '(' declist ')' returns body 'end'
     sym.body = R_body()
     
     # cleanup
-    if ShowSymbolTables:
-        Symbols.vars.show()
-        Symbols.types.show()
-    Symbols.vars.pop()
-    Symbols.types.pop()
+    if TypeCheck:
+        if ShowSymbolTables:
+            Symbols.vars.show()
+            Symbols.types.show()
+        if params:
+            k = len(params.kids)
+        else:
+            k = 0
+        if returns:
+            k += 1
+        psize = (LocalOffset, k)
+        Symbols.vars.pop()
+        Symbols.types.pop()
+    else:
+        psize = (0,0)
+    
     consume('END')
-
-    return Proc(fname, fname.value, returns, params, sym.body)
+    p = Proc(fname, fname.value, returns, params, sym, psize)
+    return p
 
 def R_returns():
     '''
@@ -989,7 +1000,7 @@ def clearLocalOffset():
     LocalOffset = 0
 def nextOffset(size=1):
     global LocalOffset, GlobalOffset
-    if Symbols.procs.level() > 2:
+    if Symbols.vars.level() > 1:
         r = LocalOffset
         LocalOffset += size
     else:
