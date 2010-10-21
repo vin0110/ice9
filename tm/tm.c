@@ -779,7 +779,8 @@ void usage()
     printf(" n(ext             Print the next command that will be executed\n");
     printf(" p(rint            Toggle printing of total instructions executed ('go' only)\n");
     printf(" q(uit             Terminate the simulation\n");
-    printf(" r(egs             Print the contents of the registers\n");
+    printf(" r(egs             Print the contents of first 8 registers\n");
+    printf(" R(egs             Print the contents of all registers\n");
     printf(" s(tep <n>         Execute n (default 1) TM instructions\n");
     printf(" t(race            Toggle instruction trace\n");
     printf(" u(nprompt)        Unprompted for script input\n");
@@ -917,13 +918,17 @@ int doCommand(void)
 	break;
 
     case 'r':
+    case 'R':
+      {
+	int last = ( cmd == 'r' ) ? 8 : no_regs;
         /***********************************/
-	for (i = 0; i<no_regs; i++) {
+	for (i = 0; i<last; i++) {
 	    printf("r[%1d]: %-4d   ", i, reg[i]);
 	    if ((i%4) == 3) printf("\n");
 	}
+	if (!i%4) printf("\n");
 	break;
-
+      }
     case '=':
         /***********************************/
 	if (getNum()) {
