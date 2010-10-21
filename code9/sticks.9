@@ -1,11 +1,11 @@
 # stick game
 
-var N: int		# the current number of sticks
-var pick, k: int
-var picktext: string
+var N: int;		# the current number of sticks
+var pick, k: int;
+var picktext: string;
 
 proc check(): int
-   var ans: int
+   var ans: int;
    fa i := 1 to 3 ->
       writes "Enter number of sticks: ";
       check := read;
@@ -45,7 +45,7 @@ proc error()
 end
 
 proc mypick(n: int) : int
-   var mod : int
+   var mod : int;
    if n < 0 ->
       error();		# should never get here
    [] n = 1 ->

@@ -1,7 +1,7 @@
 # random number generator
 
 # globals
-var Seed, CUTOFF : int
+var Seed, CUTOFF : int;
 
 proc rand(limit: int): int
     Seed := (Seed * 32719 + 3) % CUTOFF;
@@ -9,7 +9,7 @@ proc rand(limit: int): int
 end
 
 proc roll()
-   var a, b: int
+   var a, b: int;
    a := rand(6);
    b := rand(6);
    writes a;
@@ -22,11 +22,10 @@ end
 proc main()
   CUTOFF := 32749;
 
-  writes "Enter seed value: ";
+  write "Enter seed value";
   Seed := read % CUTOFF;
 
   fa i := 1 to 10 -> roll(); af
 end
 
 main();
-

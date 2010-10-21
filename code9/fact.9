@@ -7,14 +7,13 @@ proc fact(n: int) : int
   fi
 end
 
-var f: int
+var f: int;
 
-writes "What number to you want to compute the factorial of? ";
+write "What number to you want to compute the factorial of? ";
 f := read;
 if (f < 1) + (f > 100) -> write "Invalid: 0 < n < 101"; fi
 
-
 writes "Factorial of ";
 writes f;
-writes " is ";
+write " is ";
 write fact(f);
