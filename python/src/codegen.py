@@ -151,7 +151,7 @@ def gen(n):
         emitComment("start of DO BODY")
         gen(n.body)
         jumpback = emitSkip(1)
-        end_pc = jumpback+1
+        end_pc = jumpback
         emitBackPatch(jumpout, "JEQ", n.test.reg, end_pc-jumpout, reg_pc,
                       'jump out')
         emitBackPatch(jumpback, "LDA", reg_pc, test_pc-jumpback-1, reg_pc,
