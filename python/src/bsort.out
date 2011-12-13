@@ -1,0 +1,283 @@
+* set registers
+   0:     LD 5,0(0)	load memory size into GP
+   1:    LDA 6,-102(5)	set frame pointer
+* begin runtime
+* begin write string
+   4:    JEQ 1,5(7)	write(str): test len == 0
+   5:     LD 3,0(2)	r3 = *sp
+   6:   OUTC 3,3,3	out *sp
+   7:    LDA 2,1(2)	++sp
+   8:    LDA 1,-1(1)	--len
+   9:    LDA 7,-6(7)	goto top
+  10:    LDA 7,0(0)	jump back
+* end write string
+* begin array bounds
+.SDATA "ERROR: Array index out of bounds"	string literal
+  11:    LDC 1,32(0)	load size of error message
+  12:    LDC 2,1(0)	load location of error message
+  13:    LDC 0,15(0)	load return pc (halt inst below)
+  14:    LDA 7,-10(7)	jump to proc builtin:string
+  15:  OUTNL 0,0,0
+  16:   HALT 0,0,0	exit after printing error message
+  17:    JLT 1,-7(7)	test lb
+  18:    SUB 1,2,1	test ub
+  19:    JLE 1,-9(7)	test ub
+  20:    LDA 7,0(0)	return
+* end array bounds
+* end runtime
+* begin user proc code
+* end user proc code
+   2:    LDC 4,33(0)	set stack pointer
+   3:    LDC 7,21(0)	jump over preamble
+.DATA   30	string literal - length
+.SDATA "Input length of array (1-100):"	string literal
+  21:    LDC 9,33(0)	load addr of string lit
+  22:     LD 1,0(9)	write(str): r1 = len
+  23:    LDA 2,1(9)	write(str): r2 = sp
+  24:    LDC 0,26(0)	store return pc
+  25:    LDA 7,-21(7)	jump to proc builtin:string
+  26:  OUTNL 1,0,0	output \n
+  27:     IN 10,0,0	read value
+  28:    LDA 11,0(5)	load base addr of global
+  29:     ST 10,0(11)	store variable
+* start of IF TEST
+  30:    LDA 12,0(5)	load base addr of global
+  31:     LD 13,0(12)	load variable
+  32:    LDC 14,1(0)	int literal
+  33:    SUB 15,13,14	Logical binop (i)
+  34:    JLT 15,2(7)	Logical binop (ii) test
+  35:    LDC 15,0(0)	Logical binop (iii) set false
+  36:    LDA 7,1(7)	Logical binop (iv) jump over true
+  37:    LDC 15,1(0)	Logical binop (v) set true
+  38:     ST 15,0(4)	push (i)
+  39:    LDA 4,1(4)	push (ii)
+  40:    LDA 16,0(5)	load base addr of global
+  41:     LD 17,0(16)	load variable
+  42:    LDC 18,100(0)	int literal
+  43:    SUB 19,17,18	Logical binop (i)
+  44:    JGT 19,2(7)	Logical binop (ii) test
+  45:    LDC 19,0(0)	Logical binop (iii) set false
+  46:    LDA 7,1(7)	Logical binop (iv) jump over true
+  47:    LDC 19,1(0)	Logical binop (v) set true
+  48:    LDA 4,-1(4)	pop (i)
+  49:     LD 15,0(4)	pop (ii)
+  50:    ADD 20,15,19	binop: +
+* start of IF THEN
+.DATA    5	string literal - length
+.SDATA "wrong"	string literal
+  52:    LDC 21,64(0)	load addr of string lit
+  53:     LD 1,0(21)	write(str): r1 = len
+  54:    LDA 2,1(21)	write(str): r2 = sp
+  55:    LDC 0,57(0)	store return pc
+  56:    LDA 7,-52(7)	jump to proc builtin:string
+  57:  OUTNL 1,0,0	output \n
+  58:   HALT 0,0,0	exit
+* start of IF ELSE
+  51:    JEQ 20,8(7)	jump to else
+  59:    LDA 7,0(7)	jump to end
+  60:    LDA 22,0(5)	load base addr of global
+  61:     LD 23,0(22)	load variable
+  62:    LDC 24,1(0)	int literal
+  63:    SUB 25,23,24	binop: -
+  64:    LDA 26,0(5)	load base addr of global
+  65:     ST 25,0(26)	store variable
+* start of FA: get addr of itervar
+* calculate start value
+  66:    LDC 27,0(0)	int literal
+  67:    LDA 28,0(6)	load base addr of local
+  68:     ST 27,0(28)	store initial itervar
+* calculate end value
+  69:    LDA 29,0(5)	load base addr of global
+  70:     LD 30,0(29)	load variable
+  71:    LDA 31,0(6)	load base addr of local
+  72:     LD 1,0(31)	load itervar
+  73:    SUB 1,30,1	fa:  test
+.DATA    6	string literal - length
+.SDATA "Input "	string literal
+  75:    LDC 32,70(0)	load addr of string lit
+  76:     LD 1,0(32)	write(str): r1 = len
+  77:    LDA 2,1(32)	write(str): r2 = sp
+  78:    LDC 0,80(0)	store return pc
+  79:    LDA 7,-75(7)	jump to proc builtin:string
+  80:    LDA 33,0(6)	load base addr of local
+  81:     LD 34,0(33)	load variable
+  82:    LDC 35,1(0)	int literal
+  83:    ADD 36,34,35	binop: +
+  84:    OUT 36,0,0
+.DATA    2	string literal - length
+.SDATA ": "	string literal
+  85:    LDC 37,77(0)	load addr of string lit
+  86:     LD 1,0(37)	write(str): r1 = len
+  87:    LDA 2,1(37)	write(str): r2 = sp
+  88:    LDC 0,90(0)	store return pc
+  89:    LDA 7,-85(7)	jump to proc builtin:string
+  90:     IN 38,0,0	read value
+  91:    LDA 39,0(6)	load base addr of local
+  92:     LD 40,0(39)	load variable
+  93:    LDA 41,-2(5)	load base addr of global
+  94:    LDA 1,0(40)	copy index
+  95:    LDC 2,100(0)	load ub
+  96:    LDC 0,98(0)	load return pc
+  97:    LDA 7,-81(7)	jump to proc builtin:bound check
+  98:    SUB 42,41,40	adjust addr
+  99:     ST 38,0(42)	store variable
+* increment itervar in FA
+ 100:    LDA 43,0(6)	load base addr of local
+ 101:     LD 1,0(43)	load itervar
+ 102:    LDA 1,1(1)	++itervar
+ 103:     ST 1,0(43)	store itervar
+ 104:    LDA 7,-36(7)	fa:  jump to test exp
+  74:    JLT 1,30(7)	fa:  jump out
+* start of FA: get addr of itervar
+* calculate start value
+ 105:    LDC 44,0(0)	int literal
+ 106:    LDA 45,-1(6)	load base addr of local
+ 107:     ST 44,0(45)	store initial itervar
+* calculate end value
+ 108:    LDA 46,0(5)	load base addr of global
+ 109:     LD 47,0(46)	load variable
+ 110:    LDA 48,-1(6)	load base addr of local
+ 111:     LD 1,0(48)	load itervar
+ 112:    SUB 1,47,1	fa:  test
+* start of FA: get addr of itervar
+* calculate start value
+ 114:    LDC 49,0(0)	int literal
+ 115:    LDA 50,-2(6)	load base addr of local
+ 116:     ST 49,0(50)	store initial itervar
+* calculate end value
+ 117:    LDA 51,0(5)	load base addr of global
+ 118:     LD 52,0(51)	load variable
+ 119:    LDC 53,1(0)	int literal
+ 120:    SUB 54,52,53	binop: -
+ 121:    LDA 55,-2(6)	load base addr of local
+ 122:     LD 1,0(55)	load itervar
+ 123:    SUB 1,54,1	fa:  test
+* start of IF TEST
+ 125:    LDA 56,-2(6)	load base addr of local
+ 126:     LD 57,0(56)	load variable
+ 127:    LDA 58,-2(5)	load base addr of global
+ 128:    LDA 1,0(57)	copy index
+ 129:    LDC 2,100(0)	load ub
+ 130:    LDC 0,132(0)	load return pc
+ 131:    LDA 7,-115(7)	jump to proc builtin:bound check
+ 132:    SUB 59,58,57	adjust addr
+ 133:     LD 60,0(59)	load variable
+ 134:     ST 60,0(4)	push (i)
+ 135:    LDA 4,1(4)	push (ii)
+ 136:    LDA 61,-2(6)	load base addr of local
+ 137:     LD 62,0(61)	load variable
+ 138:    LDC 63,1(0)	int literal
+ 139:    ADD 64,62,63	binop: +
+ 140:    LDA 65,-2(5)	load base addr of global
+ 141:    LDA 1,0(64)	copy index
+ 142:    LDC 2,100(0)	load ub
+ 143:    LDC 0,145(0)	load return pc
+ 144:    LDA 7,-128(7)	jump to proc builtin:bound check
+ 145:    SUB 66,65,64	adjust addr
+ 146:     LD 67,0(66)	load variable
+ 147:    LDA 4,-1(4)	pop (i)
+ 148:     LD 60,0(4)	pop (ii)
+ 149:    SUB 68,60,67	Logical binop (i)
+ 150:    JGT 68,2(7)	Logical binop (ii) test
+ 151:    LDC 68,0(0)	Logical binop (iii) set false
+ 152:    LDA 7,1(7)	Logical binop (iv) jump over true
+ 153:    LDC 68,1(0)	Logical binop (v) set true
+* start of IF THEN
+ 155:    LDA 69,-2(6)	load base addr of local
+ 156:     LD 70,0(69)	load variable
+ 157:    LDC 71,1(0)	int literal
+ 158:    ADD 72,70,71	binop: +
+ 159:    LDA 73,-2(5)	load base addr of global
+ 160:    LDA 1,0(72)	copy index
+ 161:    LDC 2,100(0)	load ub
+ 162:    LDC 0,164(0)	load return pc
+ 163:    LDA 7,-147(7)	jump to proc builtin:bound check
+ 164:    SUB 74,73,72	adjust addr
+ 165:     LD 75,0(74)	load variable
+ 166:    LDA 76,-1(5)	load base addr of global
+ 167:     ST 75,0(76)	store variable
+ 168:    LDA 77,-2(6)	load base addr of local
+ 169:     LD 78,0(77)	load variable
+ 170:    LDA 79,-2(5)	load base addr of global
+ 171:    LDA 1,0(78)	copy index
+ 172:    LDC 2,100(0)	load ub
+ 173:    LDC 0,175(0)	load return pc
+ 174:    LDA 7,-158(7)	jump to proc builtin:bound check
+ 175:    SUB 80,79,78	adjust addr
+ 176:     LD 81,0(80)	load variable
+ 177:    LDA 82,-2(6)	load base addr of local
+ 178:     LD 83,0(82)	load variable
+ 179:    LDC 84,1(0)	int literal
+ 180:    ADD 85,83,84	binop: +
+ 181:    LDA 86,-2(5)	load base addr of global
+ 182:    LDA 1,0(85)	copy index
+ 183:    LDC 2,100(0)	load ub
+ 184:    LDC 0,186(0)	load return pc
+ 185:    LDA 7,-169(7)	jump to proc builtin:bound check
+ 186:    SUB 87,86,85	adjust addr
+ 187:     ST 81,0(87)	store variable
+ 188:    LDA 88,-1(5)	load base addr of global
+ 189:     LD 89,0(88)	load variable
+ 190:    LDA 90,-2(6)	load base addr of local
+ 191:     LD 91,0(90)	load variable
+ 192:    LDA 92,-2(5)	load base addr of global
+ 193:    LDA 1,0(91)	copy index
+ 194:    LDC 2,100(0)	load ub
+ 195:    LDC 0,197(0)	load return pc
+ 196:    LDA 7,-180(7)	jump to proc builtin:bound check
+ 197:    SUB 93,92,91	adjust addr
+ 198:     ST 89,0(93)	store variable
+* start of IF ELSE
+ 154:    JEQ 68,45(7)	jump to else
+ 199:    LDA 7,0(7)	jump to end
+* increment itervar in FA
+ 200:    LDA 94,-2(6)	load base addr of local
+ 201:     LD 1,0(94)	load itervar
+ 202:    LDA 1,1(1)	++itervar
+ 203:     ST 1,0(94)	store itervar
+ 204:    LDA 7,-88(7)	fa:  jump to test exp
+ 124:    JLT 1,80(7)	fa:  jump out
+* increment itervar in FA
+ 205:    LDA 95,-1(6)	load base addr of local
+ 206:     LD 1,0(95)	load itervar
+ 207:    LDA 1,1(1)	++itervar
+ 208:     ST 1,0(95)	store itervar
+ 209:    LDA 7,-102(7)	fa:  jump to test exp
+ 113:    JLT 1,96(7)	fa:  jump out
+.DATA   12	string literal - length
+.SDATA "Sorted list:"	string literal
+ 210:    LDC 96,80(0)	load addr of string lit
+ 211:     LD 1,0(96)	write(str): r1 = len
+ 212:    LDA 2,1(96)	write(str): r2 = sp
+ 213:    LDC 0,215(0)	store return pc
+ 214:    LDA 7,-210(7)	jump to proc builtin:string
+ 215:  OUTNL 1,0,0	output \n
+* start of FA: get addr of itervar
+* calculate start value
+ 216:    LDC 97,0(0)	int literal
+ 217:    LDA 98,-3(6)	load base addr of local
+ 218:     ST 97,0(98)	store initial itervar
+* calculate end value
+ 219:    LDA 99,0(5)	load base addr of global
+ 220:     LD 100,0(99)	load variable
+ 221:    LDA 101,-3(6)	load base addr of local
+ 222:     LD 1,0(101)	load itervar
+ 223:    SUB 1,100,1	fa:  test
+ 225:    LDA 102,-3(6)	load base addr of local
+ 226:     LD 103,0(102)	load variable
+ 227:    LDA 104,-2(5)	load base addr of global
+ 228:    LDA 1,0(103)	copy index
+ 229:    LDC 2,100(0)	load ub
+ 230:    LDC 0,232(0)	load return pc
+ 231:    LDA 7,-215(7)	jump to proc builtin:bound check
+ 232:    SUB 105,104,103	adjust addr
+ 233:     LD 106,0(105)	load variable
+ 234:    OUT 106,0,0
+ 235:  OUTNL 1,0,0	output \n
+* increment itervar in FA
+ 236:    LDA 107,-3(6)	load base addr of local
+ 237:     LD 1,0(107)	load itervar
+ 238:    LDA 1,1(1)	++itervar
+ 239:     ST 1,0(107)	store itervar
+ 240:    LDA 7,-22(7)	fa:  jump to test exp
+ 224:    JLT 1,16(7)	fa:  jump out

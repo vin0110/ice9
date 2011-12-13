@@ -16,11 +16,11 @@ fa i := 0 to n ->
   a[i] := read;
 af
 
-fa i := 0 to n ->
-  fa j := 0 to n-1 ->
-    if a[j] > a[j+1] ->
-      t := a[j+1];
-      a[j+1] := a[j];
+fa i := 0 to n-1 ->
+  fa j := i+1 to n ->
+    if a[i] > a[j] ->
+      t := a[i];
+      a[i] := a[j];
       a[j] := t;
     fi
   af

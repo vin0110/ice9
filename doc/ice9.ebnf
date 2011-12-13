@@ -49,13 +49,14 @@ idlist  -> id { ',' id}
 var	-> 'var' varlist ';'
 varlist  -> idlist ':' typeid { '[' int ']' } { ',' varlist}
 
-forward -> 'forward' id '(' declist ')'
-	-> 'forward' id '(' declist ')' ':' typeid
+forward -> 'forward' id '(' declist ')' ';'
+	-> 'forward' id '(' declist ')' ':' typeid ';'
 
 type	-> 'type' id '=' typeid { '[' int ']' } ';'
 
-declist	-> idlist ':' typeid { ',' declist }
-	->			# empty
+declist -> declistx
+	->            # empty
+declistx -> idlist ':' typeid { ',' declistx }
 
 typeid -> id			# This for semantics
 
@@ -100,7 +101,7 @@ line (determined by the newline character).
 1. The expressions in 'if' and 'do' statements must be bool values.
    For example: 
 
-	int x;
+	var x: int;
 	if x -> ... fi
 
    is not semantically correct.  Instead use
@@ -113,12 +114,13 @@ line (determined by the newline character).
 
    executes the body once for every value of loop between lo and hi,
    inclusive.  The expressions in 'fa' must be int.  The expressions
-   are executed exactly once and the body is executed at most hi - lo + 1
-   times.  The loop variable is an int and it is not assignable in the
-   body of the loop.  If hi = lo, the loop executes once.  If hi < lo, 
-   the statements in the loop are not executed.  The scope of the loop
-   variable is the fa statment: from fa to af.  It's declaration hides
-   any previously declared variable with the same name.
+   are executed exactly once and the body is executed at most hi - lo
+   + 1 times.  The loop variable is an int and it is not assignable in
+   the body of the loop.  If hi = lo, the loop executes once.  If hi <
+   lo, the statements in the loop are not executed.  The scope of the
+   loop variable is the fa statement body: from the '->' to 'af'.
+   It's declaration hides any previously declared variable with the
+   same name.
 
 3. The rule
 
@@ -167,11 +169,11 @@ line (determined by the newline character).
     This defines an implicit return variable with the same name as the
     function.  In the example above there is a local variable named
     'f' of type int.  The value returned by the function is the value
-    in f when it returns.
+    in f when it returns.  Functions may only return basic types.
 
-11. The break statement is valid only in a fa loop.  It cause
-    execution of the loop to stop.  Control jump immediately to the
-    first statement following the fa loop.
+11. The break statement is valid only in loops (fa or do).  It causes
+    execution of the loop to stop.  Control jumps immediately to the
+    first statement following the loop.
 
 12. The return statement in a proc definition forces a return from the
     procedure.  A return outside of a proc ... end (at the level of
@@ -184,10 +186,9 @@ line (determined by the newline character).
 There are three symbol tables in ice9.  One each for types, variables,
 and procedures.  Initially, the types symbol table consists of three
 entries: 'int', 'bool', and 'string' which resolve to the three basic
-types.  The procedure table is initially loaded with 'int' the built
-operation.  The variables table is empty.  These entries are in the
-default scope.  They can be masked by a like definition in another
-scope.
+types.  These entries are in the default scope.  They can be masked by
+a like definition in another scope.  The procedure and variables
+tables are initially empty.
 
 
 #################
@@ -216,6 +217,7 @@ declarations.  Forward declarations are only defined for procedures.
 +  : T x T -> T, T={int,bool}	  // integer addition or boolean or
 *  : T x T -> T, T={int,bool}	  // integer multiplication or boolean and
 /  : int x int -> int		  // integer division
+%  : int x int -> int		  // integer modulo
 =  : T x T -> bool, T={int,bool}  // comparison, equal
 != : T x T -> bool, T={int,bool}  // comparison, not equal
 >  : int x int -> bool		  // comparison, greater than
@@ -258,29 +260,13 @@ a bool:
 
 	b := x != 0;
 
-The built-in function int() converts a string to an integer.  In the
-following code, both write statements output '5'.
-
-	var a: string
-	var b: int
-	a := "5";
-	b := int(a);
-	write a;
-	write b;
-
---Begin Output--
-5
-5
---End Output ---
-
-There is no inverse conversion (from integer to string).
-
 ##########
 # Arrays #
 ##########
 
 Arrays are indexed from 0 to size-1.  Bounds are checked.  An index
-that is < 0 or > size-1 generates a runtime error.
+that is < 0 or > size-1 generates a runtime error.  An index that is
+not an integer generates a compile-time error.
 
 #########
 # Notes #
@@ -288,7 +274,15 @@ that is < 0 or > size-1 generates a runtime error.
 
 1. Type checking on user-defined types is structure based.  That is
 two types with the same structure are equivalent even if different
-names are used.
+names are used.  As an example,
+
+type a = int [10][5]
+type b = int [5]
+type q = int [5]
+type r = q [10]
+
+The type q is structurally equivalent to b, while r is structurally
+equivalent to a.
 
 2. Basic types are passed by value.  Array parameters are passed by
 reference, similar to the C calling convention. 
@@ -296,3 +290,13 @@ reference, similar to the C calling convention.
 3. In forward declarations, the name of the parameters are not
 important.  Only the names of the parameters in the actual proc
 declaration are meaningful.
+
+4. There are only signed integers.
+
+5. The maximum integer value must be at least 2^31 - 1
+(2147483647). The negative maximum integer must be at least - 2^31
+(-2147483648). This corresponds to 32-bit, two's-complement signed
+integers.
+
+6. The result of the modulo takes the sign of its "dividend." For
+example, 5%-2 -> 1 and -5%-2 -> -1.

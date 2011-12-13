@@ -81,7 +81,7 @@ def main():
     outfile = 'a.out'
 
     for o, a in opts:
-        if o in ("-o", "--optimize"):
+        if o in ("-O", "--optimize"):
             try:
                 opt_level = int(a)
                 if 0 < opt_level < 4:
@@ -225,7 +225,6 @@ def ice9(source=None,opt_level=0,debug=0,verbose=0,
 
     if not nocg:
         codegen(ast, outstream, {})
-    exit(0)
 
 if __name__ == "__main__":
     try:

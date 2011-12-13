@@ -203,7 +203,7 @@ def gen(n):
                 emit("LDA",2,1,saddr, 'write(str): r2 = sp')
                 emit("LDC",0,emitSkip(0)+2,0, 'store return pc')
                 emit("LDA", reg_pc, WriteStringCall-emitSkip(0), reg_pc,
-                     'jump to string call')
+                     'jump to proc builtin:string')
             except SigError:
                 raise CompilerError(n.token, 'FATAL ERROR')
         if n.nl:
@@ -282,7 +282,7 @@ def gen(n):
         emit("LDC",2,n.size,0, 'load ub')
         emit("LDC",0,emitSkip(0)+2,0, 'load return pc')
         emit("LDA", reg_pc, ArrayBoundCall-emitSkip(0)-1, reg_pc, 
-             'jump to bound check')
+             'jump to proc builtin:bound check')
      
         if n.sig.space() > 1:
             emit("LDC",n.reg,n.sig.space(),0, 'load array stride')
@@ -431,7 +431,7 @@ def codegen(ast, out, options):
             emit("LDC", 2, msg, 0, "load location of error message")
             emit("LDC",0,emitSkip(0)+2,0, 'load return pc (halt inst below)')
             emit("LDA", reg_pc, WriteStringCall-emitSkip(0), reg_pc, 
-                 'jump to string call')
+                 'jump to proc builtin:string')
             emit("OUTNL", 0,0,0,'')
             emit("HALT",0,0,0, 'exit after printing error message')
             # r0 return pc, r1 index, r2 upper

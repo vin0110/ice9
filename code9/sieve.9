@@ -10,7 +10,7 @@ fa i := 2 to 1000 -> sieve[i] := true; af
 
 # there is a tighter limit, but this will do
 fa i := 2 to L ->
-   writes "working on number "; write i;
+   #writes "working on number "; write i;
    fa j := i+1 to N ->
       if j % i = 0 ->
       	 # i divides j => j is not prime

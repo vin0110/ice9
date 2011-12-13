@@ -91,7 +91,7 @@ do N > 0 ->
       fi
    od
 
-   if (pick < 0) + (pick > 3) ->
+   if (pick < 1) + (pick > 3) ->
       write "You don't seem to understand this game.  Good bye.";
       exit;
    fi
@@ -103,7 +103,7 @@ do N > 0 ->
       write "I won.";
       break;
    [] N = 1 ->
-      write "There only one stick remaining.  I must pick it.";
+      write "There is only one stick remaining.  I must pick it.";
       write "Congratulations!  You won.";
       break;
    [] else ->

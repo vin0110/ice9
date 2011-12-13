@@ -9,11 +9,12 @@ end
 
 var f: int;
 
-write "What number to you want to compute the factorial of? ";
+writes "What number to you want to compute the factorial of? ";
 f := read;
 if (f < 1) + (f > 100) -> write "Invalid: 0 < n < 101"; fi
 
+
 writes "Factorial of ";
 writes f;
-write " is ";
+writes " is ";
 write fact(f);

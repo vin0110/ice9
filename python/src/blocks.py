@@ -57,6 +57,9 @@ class Instruction(object):
     def emit(self, pc):
         emitBackPatch(pc, self.op,0,0,0,self.comment)
 
+    def kind(self):
+        return "Inst"
+
 class ROinst(Instruction):
     def __init__(self, loc, op, r, s, t,  comment):
         self.loc = loc
@@ -72,6 +75,9 @@ class ROinst(Instruction):
 
     def emit(self, pc):
         emitBackPatch(pc, self.op,self.r,self.s,self.t,self.comment)
+
+    def kind(self):
+        return "ROinst"
 
 class RMinst(Instruction):
     def __init__(self, loc, op, r, d, s,  comment):
@@ -89,6 +95,9 @@ class RMinst(Instruction):
     def emit(self, pc):
         emitBackPatch(pc, self.op,self.r,self.d,self.s,self.comment)
 
+    def kind(self):
+        return "RMinst"
+
 class RMinstBr(RMinst):
     def target(self):
         try:
@@ -105,6 +114,7 @@ class RMinstBr(RMinst):
                 return self.r
 
     def __str__(self):
+        print self.block
         if self.block:
             if self.op in "LDC":
                 return "%3s %d,%d(%d)" % (self.op,self.r,self.target(),0)
@@ -123,6 +133,9 @@ class RMinstBr(RMinst):
             emitBackPatch(pc, self.op,self.r,self.d,self.s,self.comment)
         else:
             emitBackPatch(pc, self.op,self.r,self.d,self.s,self.comment)
+
+    def kind(self):
+        return "RMinstBr"
 
 class RMinstCondBr(RMinst):
     def target(self):
@@ -154,6 +167,9 @@ class RMinstCondBr(RMinst):
         else:
             emitBackPatch(pc, self.op,self.r,self.d,self.s,self.comment)
 
+    def kind(self):
+        return "RMinstCondBr"
+
     
 
 #########
@@ -163,7 +179,11 @@ HaltBlock = []
 Blocks = []
 ConditionalBranch = ["JLT","JLE","JEQ","JNE","JGE","JGT"]
 Branch = ["LDC", "LDA", "LD"]
+reg_sp = 4                      # stack pointer for temps
+reg_gp = 5
+reg_fp = 6                      # call frame pointer
 reg_pc = 7
+gp_regs = [0,1,2,3]
 
 #########
 # Local routines
@@ -233,7 +253,7 @@ def walkInstructions(code):
         op = code[pc].op
         if op in Branch:
             if code[pc].r == reg_pc:
-                print "%3i:" % (pc,), code[pc]
+                #print "%3i:" % (pc,), code[pc]
                 b = findBlock(Blocks, pc)
                 splitBlock(b, pc, False)
                 try:
@@ -338,6 +358,50 @@ def main():
             b.code.append(inst)
         b.start = b.end = -1
 
+    
+    optimizations = ["eliminateDeadCode",
+                     "eliminateNoops"]
+    #optimizations = []
+    for opt in optimizations:
+        O = eval(opt)
+        O()
+
+    localRegisterAllocationAll()
+    printBlock()
+
+def localRegisterAllocationAll:
+    for b in Blocks:
+        localRegisterAllocation(b)
+
+def localRegisterAllocation(b):
+    nregs = len(gp_regs)
+    
+
+def eliminateDeadCode():
+    verb = True
+    if verb:
+        sys.stderr.write("Optimization: eliminateDeadCode\n")
+    for i, b in enumerate(Blocks):
+        if b.pred == []:
+            if b.num != 0:
+                try:
+                    if b.call == True:
+                        continue
+                except AttributeError:
+                    pass
+                if verb:
+                    sys.stderr.write("del'ing block %d at %d\n" % (i, b.num))
+                del Blocks[i]
+    
+def eliminateNoops():
+    verb = True
+    for b in Blocks:
+        for n, i in enumerate(b.code):
+            if i.op == "LDA" and i.r == i.s and i.d == 0:
+                if verb: sys.stderr.write("killing inst %s\n" % (i,))
+                del b.code[n]
+
+def printBlock():
     # determine pc
     pc = 0
     block = 0
@@ -353,7 +417,7 @@ def main():
                 block = -1
         else:
             block = -1
-    
+
     for b in Blocks:
         print "* ",
         b.show()

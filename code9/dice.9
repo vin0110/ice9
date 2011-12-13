@@ -22,10 +22,11 @@ end
 proc main()
   CUTOFF := 32749;
 
-  write "Enter seed value";
+  writes "Enter seed value: ";
   Seed := read % CUTOFF;
 
   fa i := 1 to 10 -> roll(); af
 end
 
 main();
+

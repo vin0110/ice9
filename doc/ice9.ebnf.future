@@ -1,0 +1,3 @@
+. Add that minimum size for an array is 1.
+. proc f(f : int) : int end # Should be an error be return value is undefined.
+
