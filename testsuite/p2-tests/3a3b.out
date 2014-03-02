@@ -1,0 +1,24 @@
+Traceback (most recent call last):
+  File "../../python/src/ice9.py", line 231, in <module>
+    main()
+  File "../../python/src/ice9.py", line 174, in main
+    ice9(**params)
+  File "../../python/src/ice9.py", line 212, in ice9
+    doSemantics(ast, debug, verbose)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 292, in doSemantics
+    propagateSigs(ast)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 47, in propagateSigs
+    propagateSigs(k)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 47, in propagateSigs
+    propagateSigs(k)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 110, in propagateSigs
+    propagateSigs(n.exp)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 146, in propagateSigs
+    propagateSigs(n.right)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 213, in propagateSigs
+    propagateSigs(n.var)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 181, in propagateSigs
+    n.size = arrSize(n.under)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 285, in arrSize
+    return s.size
+AttributeError: 'Sig' object has no attribute 'size'

@@ -1,0 +1,39 @@
+sss 8 8
+Traceback (most recent call last):
+  File "../../python/src/ice9.py", line 231, in <module>
+    main()
+  File "../../python/src/ice9.py", line 174, in main
+    ice9(**params)
+  File "../../python/src/ice9.py", line 212, in ice9
+    doSemantics(ast, debug, verbose)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 292, in doSemantics
+    propagateSigs(ast)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 47, in propagateSigs
+    propagateSigs(k)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 58, in propagateSigs
+    propagateSigs(n.body)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 47, in propagateSigs
+    propagateSigs(k)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 76, in propagateSigs
+    propagateSigs(n.elze)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 47, in propagateSigs
+    propagateSigs(k)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 81, in propagateSigs
+    propagateSigs(n.body)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 47, in propagateSigs
+    propagateSigs(k)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 75, in propagateSigs
+    propagateSigs(n.then)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 47, in propagateSigs
+    propagateSigs(k)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 110, in propagateSigs
+    propagateSigs(n.exp)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 146, in propagateSigs
+    propagateSigs(n.right)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 175, in propagateSigs
+    n.sym.sig.params.check(n.token,args_sig)
+  File "/Users/vin/Classes/csc512/ice9/python/src/symbol.py", line 163, in check
+    if not self.kids[i].check(token,sig.kids[i]):
+  File "/Users/vin/Classes/csc512/ice9/python/src/symbol.py", line 137, in check
+    return self.under.check(sig.under)
+TypeError: check() takes exactly 3 arguments (2 given)

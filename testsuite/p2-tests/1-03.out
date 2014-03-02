@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "../../python/src/ice9.py", line 231, in <module>
+    main()
+  File "../../python/src/ice9.py", line 174, in main
+    ice9(**params)
+  File "../../python/src/ice9.py", line 212, in ice9
+    doSemantics(ast, debug, verbose)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 292, in doSemantics
+    propagateSigs(ast)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 47, in propagateSigs
+    propagateSigs(k)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 47, in propagateSigs
+    propagateSigs(k)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 161, in propagateSigs
+    raise SigError(n.token, "uniop %s requires int or bool", op)
+NameError: global name 'op' is not defined

@@ -1,0 +1,25 @@
+sss 10 10
+Traceback (most recent call last):
+  File "../../python/src/ice9.py", line 231, in <module>
+    main()
+  File "../../python/src/ice9.py", line 174, in main
+    ice9(**params)
+  File "../../python/src/ice9.py", line 212, in ice9
+    doSemantics(ast, debug, verbose)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 292, in doSemantics
+    propagateSigs(ast)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 47, in propagateSigs
+    propagateSigs(k)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 47, in propagateSigs
+    propagateSigs(k)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 110, in propagateSigs
+    propagateSigs(n.exp)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 148, in propagateSigs
+    n.sig = checkBinop(n)
+  File "/Users/vin/Classes/csc512/ice9/python/src/semantic.py", line 260, in checkBinop
+    n.left.sigCheck(n.right.sig)
+  File "/Users/vin/Classes/csc512/ice9/python/src/ast.py", line 36, in sigCheck
+    self.sig.check(self.token,sig)
+  File "/Users/vin/Classes/csc512/ice9/python/src/symbol.py", line 137, in check
+    return self.under.check(sig.under)
+TypeError: check() takes exactly 3 arguments (2 given)

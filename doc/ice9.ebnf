@@ -16,7 +16,7 @@ The start symbol is program.
 
 ########### Begin EBNF ############
 
-program	-> {var|type|forward|proc} { stm }  # empty file is valid program!
+program	-> {var|type|forward|proc} { stm }  # empty file is valid program
 
 # 3 complex tokens (these are usually handled in the lexer)
 id	-> [A-Za-z][A-Za-z0-9_]*
@@ -58,9 +58,10 @@ declist -> declistx
 	->            # empty
 declistx -> idlist ':' typeid { ',' declistx }
 
-typeid -> id			# This for semantics
+typeid -> id			# This for semantics; see semantic note #3 below
 
-lvalue	-> id | lvalue '[' exp ']'
+lvalue	-> id
+	-> lvalue '[' exp ']'
 
 exp	-> lvalue
 	-> int				# integer literal
@@ -92,7 +93,7 @@ exp	-> lvalue
 ############
 
 A comment extends from the first sharp (#) on a line to the end of the
-line (determined by the newline character).
+line (determined by the newline character or end of file).
 
 #############
 # Semantics #
@@ -133,7 +134,7 @@ line (determined by the newline character).
 
 4. The read expression returns an integer.  Thus
 
-	var a: int
+	var a: int;
 	a := read;
 
    is correct.
@@ -145,17 +146,21 @@ line (determined by the newline character).
    an integer, then each evaluates the integer expression and outputs a
    decimal representation of it.  For example:
 
-	write 1+5;
+	writes 1+5;
 
    outputs the decimal '6'.  On the other hand, if exp is a string,
-   then the string is output.
+   then the string is output.  For example:
+
+	writes "string"
+
+   outputs the strings 'string'.
 
 7. The exit statement terminates the program.
 
 8. Statements in the outermost scope are executed in order at startup.
-(Think of the outermost scope as being the C main procedure.)
+   (Think of the outermost scope as being the C main procedure.)
 
-9. Boolean expression are short-circuit evaluated.  For example, in the
+9. Boolean expressions are short-circuit evaluated.  For example, in the
    following expression the function f is not evaluated because the answer 
    to the expression is known after the first clause.
 
@@ -179,6 +184,19 @@ line (determined by the newline character).
     procedure.  A return outside of a proc ... end (at the level of
     the file) is equivalent to an exit.
 
+13. The following function definition is allowed but the result is
+    undefined.
+
+	proc f() : int end
+
+    Consider the following statement:
+
+	a := f()
+
+    The return value was not set in the function body and there is no
+    default value.  Therefore, the program is not deterministic. It is
+    not an error for a function to not set the return value.  (Why?)
+
 #################
 # Symbol Tables #
 #################
@@ -187,7 +205,7 @@ There are three symbol tables in ice9.  One each for types, variables,
 and procedures.  Initially, the types symbol table consists of three
 entries: 'int', 'bool', and 'string' which resolve to the three basic
 types.  These entries are in the default scope.  They can be masked by
-a like definition in another scope.  The procedure and variables
+a like definition in an inner scope.  The procedure and variables
 tables are initially empty.
 
 
@@ -196,16 +214,17 @@ tables are initially empty.
 #################
 
 Variables, parameters, types, and procedures are visible beginning
-with their declaration.  If defined in a procedure, the visibility
+with their declaration.  If declared in a procedure, the visibility
 stops at the end of the defining procedure.  Otherwise visibility ends
 at the end of the file.  Visibility starts with the declaration
 itself, allowing recursive definitions.  A declaration in a nested
 scope overrides a previous declaration.  However, two declarations in
 the same scope is a name clash.
 
-FORWARD: A forward statement makes a name visible before its
-declaration.  This is useful for making mutually recursive
-declarations.  Forward declarations are only defined for procedures.
+FORWARD: A forward statement makes a name visible (it declares the
+variable) before its definition.  This is useful for making mutually
+recursive definition.  Forward declarations are only defined for
+procedures.
 
 #############
 # Operators #
@@ -264,9 +283,9 @@ a bool:
 # Arrays #
 ##########
 
-Arrays are indexed from 0 to size-1.  Bounds are checked.  An index
-that is < 0 or > size-1 generates a runtime error.  An index that is
-not an integer generates a compile-time error.
+Arrays are indexed from 0 to size-1, where size > 0.  Bounds are
+checked.  An index that is < 0 or > size-1 generates a runtime error.
+An index that is not an integer generates a compile-time error.
 
 #########
 # Notes #
@@ -289,9 +308,9 @@ reference, similar to the C calling convention.
 
 3. In forward declarations, the name of the parameters are not
 important.  Only the names of the parameters in the actual proc
-declaration are meaningful.
+definition are meaningful.
 
-4. There are only signed integers.
+4. All integers are signed integers.
 
 5. The maximum integer value must be at least 2^31 - 1
 (2147483647). The negative maximum integer must be at least - 2^31
@@ -299,4 +318,9 @@ declaration are meaningful.
 integers.
 
 6. The result of the modulo takes the sign of its "dividend." For
-example, 5%-2 -> 1 and -5%-2 -> -1.
+example, 5%-2 -> 1 and -5%-2 -> -1.  This is the same convention as C.
+
+7. Whitespace: The only valid whitespace characters are space, tab, and
+newline, which in ASCII are decimal 32, 9, and 10 respectively. If you work on
+DOS/Windows machines you can add carriage return (decimal 13) for your
+convenience.

@@ -1,0 +1,62 @@
+# eight queens
+#
+# There are 92 valid positions for the eight queens.
+# This program print out the column positions for the queens, in row order.
+# The parameter to queens selects the position that is output.
+
+var a: bool[8];
+var b: bool[15];
+var c: bool[15];
+var x: int[8];
+var cnt, n: int;
+
+# counts the position, prints and exits when the desired position is found
+proc print()
+  cnt := cnt + 1;
+  if n > cnt -> return; fi
+
+  writes "Solution number ";
+  writes n;
+  write " (Row, Column)";
+  fa k := 0 to 7 ->
+     writes k+1;
+     writes ", ";
+     write x[k]+1; 
+  af
+  exit;
+end
+
+# places a queen in row i
+proc try(i: int)
+  fa j := 0 to 7 ->			# try every column
+    if a[j] * b[i+j] * c[(i-j)+7] ->  # if true, safe to put queen here
+      x[i] := j;			# place the queen
+      a[j] := false;
+      b[i+j] := false;
+      c[(i-j)+7] := false;
+      if i < 7 -> try(i+1);		# go to next column
+      [] else -> print();		# this is an answer
+      fi
+      a[j] := true;			# "unplace" the queen
+      b[i+j] := true;
+      c[(i-j)+7] := true;
+    fi
+  af
+end
+
+proc queens()
+  fa i := 0 to 7 -> a[i] := true; af
+  fa i := 0 to 14 -> b[i] := true; af
+  fa i := 0 to 14 -> c[i] := true; af
+
+  try(0);
+end
+
+# this is the first statement executed
+cnt := 0;
+writes "Input the number of the solution (1-92): ";
+n := read;
+if n < 1  -> n := 1;
+[] n > 92 -> n := 92;
+fi
+queens();

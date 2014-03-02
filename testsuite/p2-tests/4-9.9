@@ -1,0 +1,21 @@
+#Test case: 4-9
+type mysinglearray = int[100];
+type mydoublearray = int[200][100];
+type mytriplearray = int[100][200][300];
+
+proc check(a: mysinglearray, b: mydoublearray, c: mytriplearray)
+    var g: int; 
+    fa i := 1 to 10 -> 
+        write g + a[1]; 
+    af 
+    exit; 
+end
+
+var d: mysinglearray,
+    e: mydoublearray,
+    f: mytriplearray,
+    h: int[100][200][300];
+
+check(d,e,f);
+check(e[10],e,f);
+check(d,e,h);
