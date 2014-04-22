@@ -3,6 +3,8 @@
 /* The TM ("Tiny Machine") computer                           */
 /* Compiler Construction: Principles and Practice             */
 /*                                                            */
+/* v2.7.5  Modified VW Freeh April 22, 2014 		      */
+/*	   Extended SDATA to handle single quotes.	      */
 /* v2.7.4a Modified VW Freeh October 21, 2010 		      */
 /*	   Added command to print only first 8 registers.     */
 /* v2.7.4  Modified VW Freeh October 13, 2010 		      */
@@ -39,7 +41,7 @@
 /*                                                            */
 /**************************************************************/
 
-char *versionNumber ="TM version 2.7.4a";
+char *versionNumber ="TM version 2.7.5";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -224,7 +226,6 @@ void writeInstruction(int loc, int trace)
 		printf("  r[%1d]: %-4d", 
                        iMem[loc].iarg3, 
                        reg[iMem[loc].iarg3]);
-//zzz
                 tmp = iMem[loc].iarg2 + reg[iMem[loc].iarg3];
                 if ((tmp >= 0) && (tmp<DADDR_SIZE)) {
 
@@ -427,6 +428,7 @@ int readInstructions(char *fileName)
     OPCODE op;
     int arg1, arg2, arg3;
     int loc, regNo, lineNo;
+    char endChar;
     static int datamem=1;
 
     /* load program */
@@ -462,14 +464,15 @@ int readInstructions(char *fileName)
 		break;
 	    if (inCol >= lineLen)
 	      return error("Illegal sdata statement--no data", lineNo, loc);
-	    if (in_Line[inCol] != '"')
+	    endChar = in_Line[inCol];
+	    if (endChar != '"' && endChar != '\'')
 	      return error("Illegal sdata statement--invalid format", 
 			   lineNo, loc);
 	    { int start=++inCol;
 	      for ( ; inCol < lineLen; inCol++)
-		if (in_Line[inCol] == '"')
+		if (in_Line[inCol] == endChar)
 		    break;
-	      if (in_Line[inCol] !=  '"')
+	      if (in_Line[inCol] !=  endChar)
 		return error("Illegal sdata statement--format invalid", 
 			     lineNo, loc);
 	      for ( ; start < inCol; start++) {
