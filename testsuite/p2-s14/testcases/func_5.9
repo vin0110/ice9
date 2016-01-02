@@ -1,0 +1,33 @@
+type row = int[8];
+var B: row;
+
+proc q(n: int, b: row) : int
+
+  var i, c, t: int;
+
+  t := 0; 
+
+  if n >= 8 -> q := 1; 
+  [] else ->
+    b[n] := 0;
+    do b[n] < 8 ->
+      c := 0;
+      fa i := 0 to n - 1 ->
+	if (b[n] = b[i]) + (b[n] = b[i] - (n-i)) + (b[n] = b[i] + (n-i)) ->
+          c:= 1;
+          break;
+        fi
+      af
+      if c = 0 ->
+        t := t + q(n + 1, b);
+      fi
+    b[n] := b[n] + 1;
+    od
+    q := t;
+  fi
+end
+
+# main
+
+fa i := 0 to 7 -> B[i] := 0; af
+write q(0, B);

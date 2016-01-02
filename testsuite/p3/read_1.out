@@ -1,0 +1,12 @@
+Loading file: read_1.tm
+Enter integer value: -100  - bad
+Enter integer value: 10  - bad
+Enter integer value: 3  - bad
+Enter integer value: 5  - bad
+Enter integer value: 1  - bad
+Enter integer value: 11  - good
+Enter integer value: 232  - good
+Enter integer value: 34  - good
+Enter integer value: 77  - good
+Enter integer value: 99999  - good
+Number of instructions executed = 878

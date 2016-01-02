@@ -7,3 +7,5 @@
 6: ADD 5, 3, 4
 7: ST  5, 1(6)
 8: LDA 7, -9(7)   * branch back to 0:
+9: OUT 0,0,0
+10: OUTNL 0,0,0

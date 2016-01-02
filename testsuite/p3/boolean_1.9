@@ -1,0 +1,20 @@
+proc f(): bool
+  write "in f";
+  f := false;
+end
+
+proc t(): bool
+  write "in t";
+  t := true;
+end
+
+write ? (t() + f());
+write ? (f() + t());
+write ? (f() + f());
+write ? (t() + t());
+write "----";
+write ? (t() * f());
+write ? (f() * t());
+write ? (f() * f());
+write ? (t() * t());
+

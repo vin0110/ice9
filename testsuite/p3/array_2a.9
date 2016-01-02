@@ -1,0 +1,23 @@
+type mystr         = str[10]
+
+proc checkString(s: mystr)
+    fa i := 0 to 9 -> 
+        write s[i];
+    af 
+end
+
+var s: str[10];
+
+## initialize
+s[0] := "zero";
+s[1] := "one";
+s[2] := "two";
+s[3] := "three";
+s[4] := "four";
+s[5] := "five";
+s[6] := "six";
+s[7] := "seven";
+s[8] := "eight";
+s[9] := "nine";
+
+checkString(s);

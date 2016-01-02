@@ -1,0 +1,23 @@
+Loading file: boolean_1.tm
+in t
+1 
+in f
+in t
+1 
+in f
+in f
+0 
+in t
+1 
+----
+in t
+in f
+0 
+in f
+0 
+in f
+0 
+in t
+in t
+1 
+Number of instructions executed = 795

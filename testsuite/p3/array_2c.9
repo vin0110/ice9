@@ -1,0 +1,55 @@
+type mysinglearray = int[5]
+type mydoublearray = int[5][5]
+type mytriplearray = int[4][4][4]
+
+proc check(a: mysinglearray, b: mydoublearray, c: mytriplearray)
+    var g: int 
+    g := 0;
+    fa i := 0 to 4 -> 
+        g := g + a[i]; 
+    af 
+    write g;
+ 
+    g := 0;
+    fa i := 0 to 4 -> 
+      fa j := 0 to 4 ->
+        g := g + b[i][j];
+      af
+    af 
+    write g;
+
+    g := 0;
+    fa i := 0 to 3 -> 
+      fa j := 0 to 3 ->
+        fa k := 0 to 3 ->
+          g := g + c[i][j][k];
+	af
+      af
+    af
+    write g;
+end
+
+var d: mysinglearray,
+    e: mydoublearray,
+    f: mytriplearray;
+
+fa i := 0 to 4 ->
+    d[i] := i;
+af
+fa i := 0 to 4 -> 
+  fa j := 0 to 4 ->
+    e[i][j] := i+j;
+  af
+af 
+fa i := 0 to 3 -> 
+  fa j := 0 to 3 ->
+    fa k := 0 to 3 ->
+	f[i][j][k] := i+j+k;
+    af
+  af
+af
+
+check(d, e, f);
+##check(e[3],e,f);
+##check(d,e,h);
+

@@ -1,0 +1,14 @@
+Loading file: do_1.tm
+Input length of array (1-100):
+Enter integer value: Input 1 : Enter integer value: Input 2 : Enter integer value: Input 3 : Enter integer value: Input 4 : Enter integer value: Input 5 : Enter integer value: Input 6 : Enter integer value: Input 7 : Enter integer value: Input 8 : Enter integer value: Input 9 : Enter integer value: Input 10 : Enter integer value: Sorted list:
+1 
+3 
+5 
+6 
+8 
+9 
+19 
+20 
+70 
+100 
+Number of instructions executed = 6084
